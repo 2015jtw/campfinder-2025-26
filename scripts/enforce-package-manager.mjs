@@ -9,11 +9,11 @@ const agent = npm_config_user_agent?.split('/')?.[0]
 const execBin = npm_execpath?.split('/')?.pop()
 
 if (agent && agent.includes(EXPECTED)) {
-  return
+  exit(0)
 }
 
 if (execBin === 'pnpm' || execBin === 'pnpm.cjs') {
-  return
+  exit(0)
 }
 
 const message = `✖ This repository uses pnpm. Please run pnpm install instead.\n`
