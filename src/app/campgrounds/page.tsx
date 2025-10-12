@@ -1,45 +1,40 @@
 export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic' // avoid caching searchParams navigation
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import CampgroundCard from '@/components/CampgroundCard'
-import { getCampgroundCards } from '@/lib/campgrounds'
-import Pagination from '@/components/Pagination'
-import ViewToggle from '@/components/ViewToggle'
+import { prisma } from '@/lib/prisma'
 
-export default async function CampgroundsPage({
-  searchParams,
-}: {
-  searchParams: { page?: string; view?: string }
-}) {
-  const pageSize = 12
-  const page = Math.max(1, Number(searchParams.page ?? '1'))
-  const view = searchParams.view === 'list' ? 'list' : 'grid'
+export default async function CampgroundsPage() {
+  const campgrounds = await prisma.campground.findMany({
+    include: {
+      images: { take: 1, orderBy: { createdAt: 'asc' } },
+      reviews: { select: { rating: true } },
+    },
+  })
 
-  const { items, total } = await getCampgroundCards({ page, pageSize })
+  console.log('Campgrounds:', campgrounds)
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">All Campgrounds</h1>
-        <ViewToggle />
+      <h1 className="text-2xl font-semibold mb-4">All Campgrounds</h1>
+      <div className="space-y-4">
+        {campgrounds.map((cg) => (
+          <div key={cg.id} className="border p-4 rounded">
+            <h2 className="text-xl font-semibold">{cg.title}</h2>
+            <p className="text-gray-600">{cg.location}</p>
+            {/* <p className="text-green-600 font-semibold">${cg.price}</p> */}
+            <p className="text-sm text-gray-500">{cg.description}</p>
+            {cg.images[0] && (
+              <img
+                src={cg.images[0].url}
+                alt={cg.title}
+                className="w-32 h-32 object-cover rounded mt-2"
+              />
+            )}
+            <p className="text-sm text-gray-500 mt-2">Reviews: {cg.reviews.length}</p>
+          </div>
+        ))}
       </div>
-
-      {view === 'grid' ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((cg) => (
-            <CampgroundCard key={cg.id} cg={cg} variant="grid" />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {items.map((cg) => (
-            <CampgroundCard key={cg.id} cg={cg} variant="list" />
-          ))}
-        </div>
-      )}
-
-      <Pagination page={page} total={total} pageSize={pageSize} />
     </main>
   )
 }
