@@ -4,7 +4,7 @@ export async function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries: number = 2
 ): Promise<T> {
-  let lastError: Error
+  let lastError: Error | undefined
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -38,7 +38,12 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError!
+  // At this point, we've exhausted all retries and lastError is guaranteed to be defined
+  if (!lastError) {
+    throw new Error('Retry operation failed without capturing an error')
+  }
+
+  throw lastError
 }
 
 export async function findProfile(userId: string) {

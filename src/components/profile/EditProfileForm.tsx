@@ -68,14 +68,32 @@ export default function EditProfileForm({
           await saveAvatarUrl(publicUrl)
           setAvatarUrl(publicUrl)
           setMsg('Avatar updated successfully')
-        } catch (err: any) {
-          setMsg(err.message ?? 'Failed to save avatar')
+        } catch (err: unknown) {
+          if (
+            err &&
+            typeof err === 'object' &&
+            'message' in err &&
+            typeof (err as any).message === 'string'
+          ) {
+            setMsg((err as { message: string }).message)
+          } else {
+            setMsg('Failed to save avatar')
+          }
         } finally {
           setUploading(false)
         }
       })
-    } catch (err: any) {
-      setMsg(err.message ?? 'Upload failed')
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'message' in err &&
+        typeof (err as any).message === 'string'
+      ) {
+        setMsg((err as { message: string }).message)
+      } else {
+        setMsg('Upload failed')
+      }
       setUploading(false)
     }
   }
@@ -89,8 +107,17 @@ export default function EditProfileForm({
           displayName: displayName.trim() || undefined,
         })
         setMsg('Profile updated successfully')
-      } catch (err: any) {
-        setMsg(err.message ?? 'Something went wrong.')
+      } catch (err: unknown) {
+        if (
+          err &&
+          typeof err === 'object' &&
+          'message' in err &&
+          typeof (err as any).message === 'string'
+        ) {
+          setMsg((err as { message: string }).message)
+        } else {
+          setMsg('Something went wrong.')
+        }
       }
     })
   }
