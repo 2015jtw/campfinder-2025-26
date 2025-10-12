@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -47,11 +46,11 @@ model AuthUser {
   is_sso_user                 Boolean           @default(false)
   deleted_at                  DateTime?         @db.Timestamptz(6)
   is_anonymous                Boolean           @default(false)
-  profile                     Profile?
   identities                  identities[]
   mfa_factors                 mfa_factors[]
   one_time_tokens             one_time_tokens[]
   sessions                    sessions[]
+  profile                     Profile?
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -348,16 +347,14 @@ model sso_providers {
 }
 
 model Profile {
-  id          String   @id @db.Uuid
-  displayName String?  @map("display_name")
-  avatarUrl   String?  @map("avatar_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
+  id          String       @id @db.Uuid
+  displayName String?      @map("display_name")
+  avatarUrl   String?      @map("avatar_url")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
   campgrounds Campground[]
+  user        AuthUser     @relation(fields: [id], references: [id], onDelete: Cascade, map: "profiles_id_fkey")
   reviews     Review[]
-
-  user AuthUser @relation(fields: [id], references: [id], onDelete: Cascade, map: "profiles_id_fkey")
 
   @@map("profiles")
   @@schema("public")
@@ -366,47 +363,45 @@ model Profile {
 model Campground {
   id          Int      @id @default(autoincrement())
   title       String
-  description String   @db.Text
+  slug        String   @unique
+  description String
   price       Decimal  @db.Decimal(10, 2)
   location    String
   createdAt   DateTime @default(now()) @map("created_at")
-
-  userId String  @map("user_id") @db.Uuid
-  owner  Profile @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "campgrounds_user_id_fkey")
-
-  images  Image[]
-  reviews Review[]
+  userId      String   @map("user_id") @db.Uuid
+  owner       Profile  @relation(fields: [userId], references: [id], onDelete: Cascade, map: "campgrounds_user_id_fkey")
+  images      Image[]
+  reviews     Review[]
 
   @@index([userId])
+  @@index([slug])
   @@map("campgrounds")
   @@schema("public")
 }
 
 model Image {
-  id        Int      @id @default(autoincrement())
-  url       String
-  sortOrder Int      @map("order")
-  createdAt DateTime @default(now()) @map("created_at")
-
+  id           Int        @id @default(autoincrement())
+  url          String
+  sortOrder    Int        @map("order")
+  createdAt    DateTime   @default(now()) @map("created_at")
   campgroundId Int        @map("campground_id")
   campground   Campground @relation(fields: [campgroundId], references: [id], onDelete: Cascade, map: "images_campground_id_fkey")
 
-  @@unique([campgroundId, sortOrder], map: "images_campground_id_order_key")
+  @@unique([campgroundId, sortOrder])
   @@map("images")
   @@schema("public")
 }
 
 model Review {
-  id        Int      @id @default(autoincrement())
-  rating    Int      @default(5) @db.SmallInt
-  comment   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-
+  id           Int        @id @default(autoincrement())
+  rating       Int        @default(5) @db.SmallInt
+  title        String?
+  comment      String?
+  createdAt    DateTime   @default(now()) @map("created_at")
   campgroundId Int        @map("campground_id")
+  userId       String     @map("user_id") @db.Uuid
   campground   Campground @relation(fields: [campgroundId], references: [id], onDelete: Cascade, map: "reviews_campground_id_fkey")
-
-  userId String  @map("user_id") @db.Uuid
-  user   Profile @relation(fields: [userId], references: [id], onDelete: Cascade, map: "reviews_user_id_fkey")
+  user         Profile    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "reviews_user_id_fkey")
 
   @@index([campgroundId])
   @@index([userId])
