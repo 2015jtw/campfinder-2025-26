@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -364,6 +363,7 @@ model Profile {
 model Campground {
   id          Int      @id @default(autoincrement())
   title       String
+  slug        String   @unique
   description String
   price       Decimal  @db.Decimal(10, 2)
   location    String
@@ -374,6 +374,7 @@ model Campground {
   reviews     Review[]
 
   @@index([userId])
+  @@index([slug])
   @@map("campgrounds")
   @@schema("public")
 }
@@ -394,6 +395,7 @@ model Image {
 model Review {
   id           Int        @id @default(autoincrement())
   rating       Int        @default(5) @db.SmallInt
+  title        String?
   comment      String?
   createdAt    DateTime   @default(now()) @map("created_at")
   campgroundId Int        @map("campground_id")

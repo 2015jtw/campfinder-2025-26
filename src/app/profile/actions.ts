@@ -1,25 +1,57 @@
 'use server'
 
+import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
-export async function saveProfile(input: { displayName?: string; avatarUrl?: string }) {
+const avatarUrlSchema = z.string().url()
+
+export async function saveAvatarUrl(url: string) {
+  const avatarUrl = avatarUrlSchema.parse(url)
   const supabase = await createClient()
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser()
-  if (error || !user) throw new Error('Not authenticated')
 
-  // RLS policy: user can update where id = auth.uid()
-  const { error: upErr } = await supabase
-    .from('profiles')
-    .update({
-      display_name: input.displayName ?? null,
-      avatar_url: input.avatarUrl ?? null,
-      updated_at: new Date().toISOString(), // belt & suspenders
-    })
-    .eq('id', user.id)
+  if (error || !user) {
+    throw new Error('Not authenticated')
+  }
 
-  if (upErr) throw upErr
+  // Update the profile with the new avatar URL
+  await prisma.profile.update({
+    where: { id: user.id },
+    data: { avatarUrl },
+  })
+
+  // Revalidate the profile layout to update the sidebar
+  revalidatePath('/profile', 'layout')
+
+  return { ok: true }
+}
+
+export async function saveProfile(data: { displayName?: string }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    throw new Error('Not authenticated')
+  }
+
+  // Update the profile with the provided data
+  await prisma.profile.update({
+    where: { id: user.id },
+    data: {
+      displayName: data.displayName,
+    },
+  })
+
+  // Revalidate the profile layout to update the sidebar
+  revalidatePath('/profile', 'layout')
+
   return { ok: true }
 }

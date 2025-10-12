@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { saveProfile } from '@/app/profile/actions'
+import { saveProfile, saveAvatarUrl } from '@/app/profile/actions'
 
 export default function EditProfileForm({
   userId,
@@ -20,46 +20,79 @@ export default function EditProfileForm({
   const supabase = createClient()
   const [displayName, setDisplayName] = useState(initialDisplayName ?? '')
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? '')
-  const [file, setFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
   const [pending, startTransition] = useTransition()
   const [msg, setMsg] = useState<string | null>(null)
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(e.target.files?.[0] ?? null)
-  }
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  const uploadAvatar = async () => {
-    if (!file) return avatarUrl
-    const ext = file.name.split('.').pop() ?? 'png'
-    const path = `${userId}.${ext}`
+    setUploading(true)
+    setMsg(null)
 
-    const { error } = await supabase.storage.from('avatars').upload(path, file, {
-      upsert: true,
-      cacheControl: '3600',
-      contentType: file.type,
-    })
-    if (error) throw error
+    try {
+      // Get current user
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser()
+      if (userErr || !user) {
+        setMsg('Not signed in')
+        setUploading(false)
+        return
+      }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    return data.publicUrl
+      // Generate unique filename
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+
+      // Upload to Supabase Storage
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true })
+
+      if (upErr) {
+        setMsg(upErr.message)
+        setUploading(false)
+        return
+      }
+
+      // Get public URL
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
+      const publicUrl = pub.publicUrl
+
+      // Save to database via server action
+      startTransition(async () => {
+        try {
+          await saveAvatarUrl(publicUrl)
+          setAvatarUrl(publicUrl)
+          setMsg('Avatar updated successfully')
+        } catch (err: any) {
+          setMsg(err.message ?? 'Failed to save avatar')
+        } finally {
+          setUploading(false)
+        }
+      })
+    } catch (err: any) {
+      setMsg(err.message ?? 'Upload failed')
+      setUploading(false)
+    }
   }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMsg(null)
-    try {
-      const publicUrl = await uploadAvatar()
-      startTransition(async () => {
+    startTransition(async () => {
+      try {
         await saveProfile({
           displayName: displayName.trim() || undefined,
-          avatarUrl: publicUrl || undefined,
         })
-        setAvatarUrl(publicUrl || avatarUrl)
-        setMsg('Saved')
-      })
-    } catch (err: any) {
-      setMsg(err.message ?? 'Something went wrong.')
-    }
+        setMsg('Profile updated successfully')
+      } catch (err: any) {
+        setMsg(err.message ?? 'Something went wrong.')
+      }
+    })
   }
 
   return (
@@ -104,7 +137,13 @@ export default function EditProfileForm({
 
         <div className="text-center">
           <Label htmlFor="avatar-upload" className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors">
+            <span
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                uploading || pending
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -113,13 +152,14 @@ export default function EditProfileForm({
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              Change Avatar
+              {uploading ? 'Uploading...' : 'Change Avatar'}
             </span>
             <Input
               id="avatar-upload"
               type="file"
               accept="image/*"
               onChange={onFileChange}
+              disabled={uploading || pending}
               className="hidden"
             />
           </Label>
@@ -149,7 +189,11 @@ export default function EditProfileForm({
       {/* Action Buttons */}
       <div className="flex items-center justify-between pt-6 border-t">
         <div className="flex items-center gap-4">
-          <Button type="submit" disabled={pending} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            type="submit"
+            disabled={pending || uploading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             {pending ? (
               <>
                 <svg className="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -179,17 +223,17 @@ export default function EditProfileForm({
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                Save Changes
+                Save Display Name
               </>
             )}
           </Button>
           {msg && (
             <div
               className={`flex items-center gap-2 text-sm ${
-                msg === 'Saved' ? 'text-green-600' : 'text-red-600'
+                msg.includes('successfully') || msg === 'Saved' ? 'text-green-600' : 'text-red-600'
               }`}
             >
-              {msg === 'Saved' ? (
+              {msg.includes('successfully') || msg === 'Saved' ? (
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
