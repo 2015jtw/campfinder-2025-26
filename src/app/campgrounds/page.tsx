@@ -170,7 +170,7 @@ export default async function CampgroundsPage({
             </div>
           )}
 
-          <Pagination currentPage={page} totalPages={totalPages} />
+          <Pagination currentPage={page} totalPages={totalPages} searchParams={params ?? {}} />
         </>
       )}
     </section>
