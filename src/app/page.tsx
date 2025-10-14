@@ -9,7 +9,7 @@ import Link from 'next/link'
 import FeaturedCarousel from '@/components/FeaturedCarousel'
 
 export default async function HomePage() {
-  const raw = await withRetry(() =>
+  const raw = (await withRetry(() =>
     prisma.campground.findMany({
       take: 12, // adjust as you wish
       orderBy: { reviews: { _count: 'desc' } },
@@ -24,7 +24,7 @@ export default async function HomePage() {
         _count: { select: { reviews: true } },
       },
     })
-  )
+  )) as any[]
 
   const featured = raw.map((r) => ({
     id: String(r.id),
