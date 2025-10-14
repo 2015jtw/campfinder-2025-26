@@ -12,7 +12,7 @@ export default async function ReviewsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const reviews = await prisma.review.findMany({
+  const reviews = (await prisma.review.findMany({
     where: { userId: user!.id },
     orderBy: { createdAt: 'desc' },
     take: 10,
@@ -23,7 +23,7 @@ export default async function ReviewsPage() {
       createdAt: true,
       campground: { select: { id: true, title: true } },
     },
-  })
+  })) as any[]
 
   return (
     <div className="space-y-8">
