@@ -1,14 +1,15 @@
 // Re-export Prisma types for easier access
-export type { Campground, Image, Review, Profile, AuthUser } from '@/generated/prisma'
+export type { Campground, Image, Review, Profile, AuthUser } from '@/generated/prisma/index'
 
 // Use Prisma's generated types for specific query shapes
-export type CampgroundWithBasicInfo = import('@/generated/prisma').Prisma.CampgroundGetPayload<{
-  include: {
-    images: { select: { url: true } }
-    owner: { select: { id: true; displayName: true } }
-    reviews: { select: { rating: true } }
-  }
-}>
+export type CampgroundWithBasicInfo =
+  import('@/generated/prisma/index').Prisma.CampgroundGetPayload<{
+    include: {
+      images: { select: { url: true } }
+      owner: { select: { id: true; displayName: true } }
+      reviews: { select: { rating: true } }
+    }
+  }>
 
 // Add computed fields for UI components
 export type CampgroundCardData = CampgroundWithBasicInfo & {
