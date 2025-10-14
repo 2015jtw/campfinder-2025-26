@@ -1,5 +1,5 @@
-// Re-export Prisma types for easier access
-export type { Campground, Image, Review, Profile, AuthUser } from '@prisma/client'
+// Re-export Prisma namespace for type utilities
+export type { Prisma } from '@prisma/client'
 
 // Use Prisma's generated types for specific query shapes
 export type CampgroundWithBasicInfo = import('@prisma/client').Prisma.CampgroundGetPayload<{

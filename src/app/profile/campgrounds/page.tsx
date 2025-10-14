@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { Campground } from '@/types'
+import { Prisma } from '@/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -14,7 +14,10 @@ export default async function CampgroundsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const campgrounds: (Pick<Campground, 'id' | 'title' | 'location' | 'createdAt'> & {
+  const campgrounds: (Pick<
+    Prisma.CampgroundGetPayload<{}>,
+    'id' | 'title' | 'location' | 'createdAt'
+  > & {
     images: { url: string }[]
   })[] = await prisma.campground.findMany({
     where: { userId: user!.id },
