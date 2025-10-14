@@ -60,7 +60,7 @@ function orderByFromSort(sort: SortOption) {
 async function fetchCampgrounds(page: number, sort: SortOption): Promise<CampgroundsPageData> {
   const skip = (page - 1) * PAGE_SIZE
 
-  const [rawRows, total] = await Promise.all([
+  const [rawRows, total] = (await Promise.all([
     withRetry(() =>
       prisma.campground.findMany({
         orderBy: orderByFromSort(sort),
@@ -79,7 +79,7 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
       })
     ),
     withRetry(() => prisma.campground.count()),
-  ])
+  ])) as [any[], number]
 
   const rows: CampgroundCardData[] = rawRows.map((r) => ({
     id: String(r.id),
