@@ -41,7 +41,7 @@ export default async function HomePage() {
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Home</h1>
+        <h1 className="text-2xl font-semibold">Homepage</h1>
       </header>
 
       {/* Featured campgrounds */}
