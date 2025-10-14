@@ -8,11 +8,29 @@ import ViewToggle from '@/components/ViewToggle'
 import FilterSelect, { SortOption } from '@/components/FilterSelect'
 import Pagination from '@/components/Pagination'
 import CampgroundCard from '@/components/CampgroundCard'
-import { CampgroundCardData, CampgroundsPageData, CampgroundsSearchParams } from '@/types'
+import { CampgroundsSearchParams, campgroundBasicInclude } from '@/types'
+import type { Prisma } from '@prisma/client'
 
 const PAGE_SIZE = 12
 
 type ViewType = 'grid' | 'list'
+
+// Define types using Prisma.Result for stability
+type CampgroundWithBasicInfo = Prisma.Result<
+  typeof prisma.campground,
+  { include: typeof campgroundBasicInclude },
+  'findMany'
+>[number]
+
+type CampgroundCardData = CampgroundWithBasicInfo & {
+  _avgRating?: number | null
+  _reviewsCount?: number
+}
+
+type CampgroundsPageData = {
+  rows: CampgroundCardData[]
+  total: number
+}
 
 function parseParams(searchParams: Record<string, string>) {
   const page = Math.max(1, parseInt(searchParams.page || '1', 10))
@@ -49,8 +67,8 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
         skip,
         take: PAGE_SIZE,
         include: {
+          ...campgroundBasicInclude,
           images: { select: { url: true }, take: 1 },
-          owner: { select: { id: true, displayName: true } },
           reviews: { select: { rating: true }, take: 0 }, // light fetch
         },
       })

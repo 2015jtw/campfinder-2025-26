@@ -2,8 +2,20 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Decimal } from '@prisma/client/runtime/library'
 import { Star, MapPin } from 'lucide-react'
-import { CampgroundCardData } from '@/types'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
+import type { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
+import { campgroundBasicInclude } from '@/types'
+
+// Define the type locally using Prisma.Result for stability
+type CampgroundCardData = Prisma.Result<
+  typeof prisma.campground,
+  { include: typeof campgroundBasicInclude },
+  'findMany'
+>[number] & {
+  _avgRating?: number | null
+  _reviewsCount?: number
+}
 
 function money(price: Decimal) {
   return `$${price.toFixed(0)}`

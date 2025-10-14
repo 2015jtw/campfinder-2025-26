@@ -1,26 +1,12 @@
-// Re-export Prisma namespace for type utilities
+// Keep only the Prisma namespace if you need it elsewhere
 export type { Prisma } from '@prisma/client'
 
-// Use Prisma's generated types for specific query shapes
-export type CampgroundWithBasicInfo = import('@prisma/client').Prisma.CampgroundGetPayload<{
-  include: {
-    images: { select: { url: true } }
-    owner: { select: { id: true; displayName: true } }
-    reviews: { select: { rating: true } }
-  }
-}>
-
-// Add computed fields for UI components
-export type CampgroundCardData = CampgroundWithBasicInfo & {
-  _avgRating?: number | null
-  _reviewsCount?: number
-}
-
-// Type for the campgrounds page data
-export type CampgroundsPageData = {
-  rows: CampgroundCardData[]
-  total: number
-}
+// If you want to share common include/select configs, export them as consts:
+export const campgroundBasicInclude = {
+  images: { select: { url: true } },
+  owner: { select: { id: true, displayName: true } },
+  reviews: { select: { rating: true } },
+} as const
 
 // Type for search params
 export type CampgroundsSearchParams = {
