@@ -8,21 +8,21 @@ import ViewToggle from '@/components/ViewToggle'
 import FilterSelect, { SortOption } from '@/components/FilterSelect'
 import Pagination from '@/components/Pagination'
 import CampgroundCard from '@/components/CampgroundCard'
-import { CampgroundsSearchParams, campgroundBasicInclude } from '@/types'
-import type { Prisma } from '@prisma/client'
+import { CampgroundsSearchParams } from '@/types'
 
 const PAGE_SIZE = 12
 
 type ViewType = 'grid' | 'list'
 
-// Define types using Prisma.Result for stability
-type CampgroundWithBasicInfo = Prisma.Result<
-  typeof prisma.campground,
-  { include: typeof campgroundBasicInclude },
-  'findMany'
->[number]
-
-type CampgroundCardData = CampgroundWithBasicInfo & {
+// Drop the Prisma.Result dance entirely
+type CampgroundCardData = {
+  id: string // normalize to string for keys/links
+  slug: string
+  title: string
+  location: string
+  description?: string | null
+  price: number | null // Decimal -> number
+  images: { url: string }[]
   _avgRating?: number | null
   _reviewsCount?: number
 }
@@ -60,30 +60,40 @@ function orderByFromSort(sort: SortOption) {
 async function fetchCampgrounds(page: number, sort: SortOption): Promise<CampgroundsPageData> {
   const skip = (page - 1) * PAGE_SIZE
 
-  const [rawRows, total] = (await Promise.all([
+  const [rawRows, total] = await Promise.all([
     withRetry(() =>
       prisma.campground.findMany({
         orderBy: orderByFromSort(sort),
         skip,
         take: PAGE_SIZE,
-        include: {
-          ...campgroundBasicInclude,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          location: true,
+          description: true,
+          price: true, // Prisma.Decimal | null
           images: { select: { url: true }, take: 1 },
-          reviews: { select: { rating: true }, take: 0 }, // light fetch
+          _count: { select: { reviews: true } },
         },
       })
     ),
     withRetry(() => prisma.campground.count()),
-  ])) as [any[], number]
+  ])
 
-  // Optionally compute avg rating if you want stars on card
-  const withMeta: CampgroundCardData[] = rawRows.map((r) => ({
-    ...r,
-    _avgRating: null as number | null,
-    _reviewsCount: undefined as number | undefined,
+  const rows: CampgroundCardData[] = rawRows.map((r) => ({
+    id: String(r.id),
+    slug: r.slug,
+    title: r.title,
+    location: r.location,
+    description: r.description,
+    price: r.price == null ? null : Number(r.price), // 🔁 Decimal -> number
+    images: r.images,
+    _avgRating: null,
+    _reviewsCount: r._count.reviews,
   }))
 
-  return { rows: withMeta, total }
+  return { rows, total }
 }
 
 export default async function CampgroundsPage({
