@@ -2,7 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -16,11 +15,13 @@ const select = {
 } as const
 
 // Element type for one row returned by this query:
-type CampgroundRow = Prisma.Result<
-  typeof prisma.campground,
-  { select: typeof select },
-  'findMany'
->[number]
+type CampgroundRow = {
+  id: number
+  title: string
+  location: string
+  createdAt: Date
+  images: { url: string }[]
+}
 
 export default async function CampgroundsPage() {
   // Auth is handled by the layout
