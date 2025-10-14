@@ -3,38 +3,176 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 import { prisma } from '@/lib/prisma'
+import { withRetry } from '@/lib/db'
+import ViewToggle from '@/components/ViewToggle'
+import FilterSelect, { SortOption } from '@/components/FilterSelect'
+import Pagination from '@/components/Pagination'
+import CampgroundCard from '@/components/CampgroundCard'
+import { CampgroundCardData, CampgroundsPageData, CampgroundsSearchParams } from '@/types'
 
-export default async function CampgroundsPage() {
-  const campgrounds = await prisma.campground.findMany({
-    include: {
-      images: { take: 1, orderBy: { createdAt: 'asc' } },
-      reviews: { select: { rating: true } },
-    },
-  })
+const PAGE_SIZE = 12
 
-  console.log('Campgrounds:', campgrounds)
+type ViewType = 'grid' | 'list'
+
+function parseParams(searchParams: Record<string, string>) {
+  const page = Math.max(1, parseInt(searchParams.page || '1', 10))
+  const view = (searchParams.view as ViewType) || 'grid'
+  const sort = (searchParams.sort as SortOption) || 'alpha-asc'
+
+  return { page, view, sort }
+}
+
+function orderByFromSort(sort: SortOption) {
+  switch (sort) {
+    case 'alpha-asc':
+      return { title: 'asc' as const }
+    case 'alpha-desc':
+      return { title: 'desc' as const }
+    case 'rating-desc':
+      return { reviews: { _count: 'desc' as const } }
+    case 'price-desc':
+      return { price: 'desc' as const }
+    case 'price-asc':
+      return { price: 'asc' as const }
+    default:
+      return { title: 'asc' as const }
+  }
+}
+
+async function fetchCampgrounds(page: number, sort: SortOption): Promise<CampgroundsPageData> {
+  const skip = (page - 1) * PAGE_SIZE
+
+  const [rows, total] = await Promise.all([
+    withRetry(() =>
+      prisma.campground.findMany({
+        orderBy: orderByFromSort(sort),
+        skip,
+        take: PAGE_SIZE,
+        include: {
+          images: { select: { url: true }, take: 1 },
+          owner: { select: { id: true, displayName: true } },
+          reviews: { select: { rating: true }, take: 0 }, // light fetch
+        },
+      })
+    ),
+    withRetry(() => prisma.campground.count()),
+  ])
+
+  // Optionally compute avg rating if you want stars on card
+  const withMeta: CampgroundCardData[] = rows.map((r) => ({
+    ...r,
+    _avgRating: null as number | null,
+    _reviewsCount: undefined as number | undefined,
+  }))
+
+  return { rows: withMeta, total }
+}
+
+export default async function CampgroundsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<CampgroundsSearchParams>
+}) {
+  const params = await searchParams
+  const { page, view, sort } = parseParams(params ?? {})
+
+  let rows: CampgroundCardData[] = []
+  let total = 0
+  let totalPages = 1
+  let error: string | null = null
+
+  try {
+    const result = await fetchCampgrounds(page, sort)
+    rows = result.rows
+    total = result.total
+    totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  } catch (err) {
+    console.error('Failed to fetch campgrounds:', err)
+    error = 'Failed to load campgrounds. Please check your database connection.'
+  }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-4">All Campgrounds</h1>
-      <div className="space-y-4">
-        {campgrounds.map((cg) => (
-          <div key={cg.id} className="border p-4 rounded">
-            <h2 className="text-xl font-semibold">{cg.title}</h2>
-            <p className="text-gray-600">{cg.location}</p>
-            {/* <p className="text-green-600 font-semibold">${cg.price}</p> */}
-            <p className="text-sm text-gray-500">{cg.description}</p>
-            {cg.images[0] && (
-              <img
-                src={cg.images[0].url}
-                alt={cg.title}
-                className="w-32 h-32 object-cover rounded mt-2"
+    <section className="container mx-auto px-4 py-6 space-y-6">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Campgrounds</h1>
+        <div className="flex items-center gap-3">
+          <FilterSelect current={sort} />
+          <ViewToggle view={view} />
+        </div>
+      </header>
+
+      {/* Error State */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <div className="flex items-center justify-center mb-2">
+            <svg
+              className="w-6 h-6 text-red-500 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
               />
-            )}
-            <p className="text-sm text-gray-500 mt-2">Reviews: {cg.reviews.length}</p>
+            </svg>
+            <h3 className="text-lg font-semibold text-red-800">Database Connection Error</h3>
           </div>
-        ))}
-      </div>
-    </main>
+          <p className="text-red-600">{error}</p>
+          <p className="text-sm text-red-500 mt-2">
+            Please check your .env file and ensure your database credentials are correct.
+          </p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!error && rows.length === 0 && (
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-12 text-center">
+          <div className="flex items-center justify-center mb-4">
+            <svg
+              className="w-12 h-12 text-neutral-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-neutral-800 mb-2">No Campgrounds Found</h3>
+          <p className="text-neutral-600">There are no campgrounds to display at the moment.</p>
+        </div>
+      )}
+
+      {/* Content */}
+      {!error && rows.length > 0 && (
+        <>
+          {/* List/Grid */}
+          {view === 'list' ? (
+            <ul className="divide-y rounded-lg border">
+              {rows.map((cg) => (
+                <li key={cg.id} className="p-4">
+                  <CampgroundCard data={cg} layout="list" />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {rows.map((cg) => (
+                <CampgroundCard key={cg.id} data={cg} layout="grid" />
+              ))}
+            </div>
+          )}
+
+          <Pagination currentPage={page} totalPages={totalPages} searchParams={params ?? {}} />
+        </>
+      )}
+    </section>
   )
 }

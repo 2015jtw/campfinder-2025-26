@@ -1,0 +1,74 @@
+'use client'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+
+export type SortOption = 'alpha-desc' | 'alpha-asc' | 'rating-desc' | 'price-desc' | 'price-asc'
+
+// Icons
+function SortAsc({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 4h13M3 8h9m-9 4h6m4 0l3-3m0 0l3 3m-3-3v12"
+      />
+    </svg>
+  )
+}
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
+const OPTIONS: { value: SortOption; label: string; icon?: string }[] = [
+  { value: 'alpha-desc', label: 'Alphabetical (Z-A)', icon: '🔤' },
+  { value: 'alpha-asc', label: 'Alphabetical (A-Z)', icon: '🔡' },
+  { value: 'rating-desc', label: 'Highest Rated', icon: '⭐' },
+  { value: 'price-desc', label: 'Price: High to Low', icon: '💰' },
+  { value: 'price-asc', label: 'Price: Low to High', icon: '💵' },
+]
+
+export default function FilterSelect({ current }: { current: SortOption }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const sp = useSearchParams()
+
+  const onChange = (value: string) => {
+    const params = new URLSearchParams(sp?.toString())
+    params.set('sort', value)
+    params.set('page', '1')
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const currentOption = OPTIONS.find((o) => o.value === current)
+
+  return (
+    <div className="relative">
+      <label className="inline-flex items-center gap-2.5 group">
+        <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+          <SortAsc className="w-4 h-4 text-neutral-500" />
+          <span>Sort by</span>
+        </div>
+        <div className="relative">
+          <select
+            className="appearance-none rounded-lg border border-neutral-300 pl-4 pr-10 py-2.5 text-sm bg-white hover:border-neutral-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 focus:outline-none transition-all cursor-pointer font-medium text-neutral-900 shadow-sm"
+            value={current}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.icon} {o.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+        </div>
+      </label>
+    </div>
+  )
+}

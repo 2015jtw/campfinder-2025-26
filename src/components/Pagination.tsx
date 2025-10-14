@@ -1,45 +1,52 @@
-'use client'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+
+function pageHref(page: number, searchParams: Record<string, string>) {
+  const params = new URLSearchParams(searchParams)
+  params.set('page', String(page))
+  return `?${params.toString()}`
+}
 
 export default function Pagination({
-  page,
-  total,
-  pageSize,
+  currentPage,
+  totalPages,
+  searchParams = {},
 }: {
-  page: number
-  total: number
-  pageSize: number
+  currentPage: number
+  totalPages: number
+  searchParams?: Record<string, string>
 }) {
-  const pages = Math.max(1, Math.ceil(total / pageSize))
-  const router = useRouter()
-  const pathname = usePathname()
-  const sp = useSearchParams()
+  const prev = Math.max(1, currentPage - 1)
+  const next = Math.min(totalPages, currentPage + 1)
 
-  function go(p: number) {
-    const params = new URLSearchParams(sp.toString())
-    params.set('page', String(p))
-    router.push(`${pathname}?${params.toString()}`)
-  }
+  const pages = Array.from({ length: totalPages })
+    .map((_, i) => i + 1)
+    .slice(0, 7) // clamp to 7
 
   return (
-    <div className="flex items-center justify-between mt-6">
-      <button
-        className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
-        onClick={() => go(Math.max(1, page - 1))}
-        disabled={page <= 1}
+    <nav className="flex items-center justify-center gap-2" aria-label="Pagination">
+      <Link
+        className="px-3 py-1.5 rounded border"
+        href={pageHref(prev, searchParams)}
+        aria-disabled={currentPage === 1}
       >
-        Previous
-      </button>
-      <div className="text-sm text-neutral-600">
-        Page {page} of {pages}
-      </div>
-      <button
-        className="px-3 py-1.5 rounded-md border text-sm disabled:opacity-50"
-        onClick={() => go(Math.min(pages, page + 1))}
-        disabled={page >= pages}
+        Prev
+      </Link>
+      {pages.map((p) => (
+        <Link
+          key={p}
+          href={pageHref(p, searchParams)}
+          className={`px-3 py-1.5 rounded border ${p === currentPage ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
+        >
+          {p}
+        </Link>
+      ))}
+      <Link
+        className="px-3 py-1.5 rounded border"
+        href={pageHref(next, searchParams)}
+        aria-disabled={currentPage === totalPages}
       >
         Next
-      </button>
-    </div>
+      </Link>
+    </nav>
   )
 }
