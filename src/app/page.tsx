@@ -9,17 +9,34 @@ import Link from 'next/link'
 import FeaturedCarousel from '@/components/FeaturedCarousel'
 
 export default async function HomePage() {
-  const featured = await withRetry(() =>
+  const raw = await withRetry(() =>
     prisma.campground.findMany({
       take: 12, // adjust as you wish
       orderBy: { reviews: { _count: 'desc' } },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        location: true,
+        description: true,
+        price: true,
         images: { select: { url: true }, take: 1 },
-        owner: { select: { id: true, displayName: true } },
         _count: { select: { reviews: true } },
       },
     })
   )
+
+  const featured = raw.map((r) => ({
+    id: String(r.id),
+    slug: r.slug,
+    title: r.title,
+    location: r.location,
+    description: r.description,
+    images: r.images,
+    price: r.price === null ? null : Number(r.price), // ✅ Decimal -> number
+    _avgRating: null, // or your computed value
+    _reviewsCount: r._count.reviews,
+  }))
 
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
@@ -33,7 +50,11 @@ export default async function HomePage() {
           Featured Campgrounds
         </h2>
         <FeaturedCarousel
-          items={featured.map((item) => ({ ...item, price: Number(item.price) }))}
+          items={featured.map((item) => ({
+            ...item,
+            id: Number(item.id),
+            price: Number(item.price),
+          }))}
         />
       </section>
     </main>
