@@ -3,7 +3,6 @@ export const revalidate = 60 // ISR is fine for public list
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/types'
 import { withRetry } from '@/lib/db'
 import Link from 'next/link'
 import FeaturedCarousel from '@/components/FeaturedCarousel'
