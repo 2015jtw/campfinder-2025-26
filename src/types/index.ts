@@ -28,3 +28,12 @@ export type CampgroundsSearchParams = {
   view?: 'grid' | 'list'
   sort?: 'alpha-asc' | 'alpha-desc' | 'rating-desc' | 'price-desc' | 'price-asc'
 }
+
+// Type for featured carousel items
+export type FeaturedCarouselItem = {
+  id: number
+  title: string
+  price: number
+  images: { url: string }[]
+  _count?: { reviews: number }
+}
