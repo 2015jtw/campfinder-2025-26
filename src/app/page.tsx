@@ -1,6 +1,5 @@
 export const runtime = 'nodejs'
 export const revalidate = 60 // ISR is fine for public list
-export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
 import { withRetry } from '@/lib/db'
@@ -52,7 +51,7 @@ export default async function HomePage() {
           items={featured.map((item) => ({
             ...item,
             id: Number(item.id),
-            price: Number(item.price),
+            price: item.price != null ? Number(item.price) : 0,
           }))}
         />
       </section>

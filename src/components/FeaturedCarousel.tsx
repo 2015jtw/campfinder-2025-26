@@ -5,6 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { FeaturedCarouselItem } from '@/types'
 
+const SCROLL_THRESHOLD = 10
+const CARD_GAP = 16 // Should match gap-4 class (1rem = 16px)
+const FALLBACK_CARD_WIDTH = 300
+
 export default function FeaturedCarousel({ items }: { items: FeaturedCarouselItem[] }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
@@ -15,7 +19,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
     if (!el) return
 
     setCanScrollLeft(el.scrollLeft > 0)
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10)
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - SCROLL_THRESHOLD)
   }
 
   useEffect(() => {
@@ -31,7 +35,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
     const el = trackRef.current
     if (!el) return
     const card = el.querySelector<HTMLElement>('[data-card]')
-    const cardWidth = card ? card.offsetWidth + 16 : 300
+    const cardWidth = card ? card.offsetWidth + CARD_GAP : FALLBACK_CARD_WIDTH
     el.scrollBy({ left: (dir === 'left' ? -1 : 1) * cardWidth * 2, behavior: 'smooth' })
   }
 
