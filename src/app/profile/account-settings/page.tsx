@@ -13,7 +13,11 @@ export default async function AccountSettingsPage() {
   } = await supabase.auth.getUser()
 
   // Read the profile (should exist due to trigger/backfill)
-  const profile = await findProfile(user!.id)
+  const profile = (await findProfile(user!.id)) as {
+    id: string
+    displayName: string | null
+    avatarUrl: string | null
+  } | null
 
   if (!profile) {
     return <div>Profile not found</div>

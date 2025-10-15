@@ -1,11 +1,23 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Decimal } from '@prisma/client/runtime/library'
 import { Star, MapPin } from 'lucide-react'
-import { CampgroundCardData } from '@/types'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 
-function money(price: Decimal) {
+// Use the same DTO type as the page
+type CampgroundCardData = {
+  id: string
+  slug: string
+  title: string
+  location: string
+  description?: string | null
+  price: number | null
+  images: { url: string }[]
+  _avgRating?: number | null
+  _reviewsCount?: number
+}
+
+function money(price: number | null) {
+  if (price == null) return 'Price TBD'
   return `$${price.toFixed(0)}`
 }
 

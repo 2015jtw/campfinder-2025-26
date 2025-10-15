@@ -2,10 +2,26 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { Campground } from '@/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+const select = {
+  id: true,
+  title: true,
+  location: true,
+  createdAt: true,
+  images: { select: { url: true }, take: 1 },
+} as const
+
+// Element type for one row returned by this query:
+type CampgroundRow = {
+  id: number
+  title: string
+  location: string
+  createdAt: Date
+  images: { url: string }[]
+}
 
 export default async function CampgroundsPage() {
   // Auth is handled by the layout
@@ -14,19 +30,11 @@ export default async function CampgroundsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const campgrounds: (Pick<Campground, 'id' | 'title' | 'location' | 'createdAt'> & {
-    images: { url: string }[]
-  })[] = await prisma.campground.findMany({
+  const campgrounds: CampgroundRow[] = await prisma.campground.findMany({
     where: { userId: user!.id },
     orderBy: { createdAt: 'desc' },
     take: 10,
-    select: {
-      id: true,
-      title: true,
-      location: true,
-      createdAt: true,
-      images: { take: 1, select: { url: true } },
-    },
+    select,
   })
 
   return (
@@ -86,7 +94,7 @@ export default async function CampgroundsPage() {
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {campgrounds.map((cg) => (
+            {campgrounds.map((cg: CampgroundRow) => (
               <Link key={cg.id} href={`/campgrounds/${cg.id}`} className="group">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                   {cg.images[0]?.url ? (

@@ -35,7 +35,10 @@ export default async function ProfileLayout({ children }: { children: ReactNode 
   if (error || !data.user) redirect('/login')
 
   // Get user profile for sidebar header
-  const profile = await findProfileForLayout(data.user.id)
+  const profile = (await findProfileForLayout(data.user.id)) as {
+    displayName: string | null
+    avatarUrl: string | null
+  } | null
 
   return (
     <SidebarProvider>
