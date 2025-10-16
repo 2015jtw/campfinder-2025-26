@@ -35,5 +35,7 @@ export const CreateCampgroundSchema = z.object({
 export type CreateCampgroundInput = z.infer<typeof CreateCampgroundSchema>
 
 export type CreateCampgroundActionResult =
-  | { ok: true; id: number }
+  | { ok: true; id: number; slug: string }
   | { ok: false; errors: Record<string, string[]> | { _form?: string } }
+
+export type UpdateCampgroundActionResult = { ok: true; slug: string } | { ok: false; error: string }

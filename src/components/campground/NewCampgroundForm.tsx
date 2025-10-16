@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
 import { createCampgroundAction } from '@/app/campgrounds/actions'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 // shadcn/ui
 import { Button } from '@/components/ui/button'
@@ -96,7 +97,8 @@ export default function NewCampgroundForm() {
           const res = await createCampgroundAction(formData)
 
           if (res.ok) {
-            router.push(`/campgrounds/${res.id}`)
+            toast.success('Campground created successfully!')
+            router.push(`/campgrounds/${res.slug}`)
           } else {
             // Handle validation errors
             if (res.errors) {
@@ -116,6 +118,7 @@ export default function NewCampgroundForm() {
                 }
               })
             }
+            toast.error('Failed to create campground. Please check the form and try again.')
           }
 
           setIsSubmitting(false)

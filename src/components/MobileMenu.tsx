@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { SignOutButton } from './SignOutButton'
+import { SearchBar } from './SearchBar'
 import type { User } from '@supabase/supabase-js'
 
 interface MobileMenuProps {
@@ -58,10 +59,15 @@ export function MobileMenu({ user }: MobileMenuProps) {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="absolute top-16 left-0 right-0 md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 backdrop-blur dark:bg-slate-950/95">
+        <div className="absolute top-full left-0 right-0 md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 backdrop-blur dark:bg-slate-950/95 z-50">
           <div className="px-4 py-4 space-y-4">
+            {/* Mobile Search Bar */}
+            <div className="pb-4">
+              <SearchBar onResultClick={closeMobileMenu} />
+            </div>
+
             {/* Mobile Navigation Links */}
-            <div className="space-y-2">
+            <div className="space-y-2 border-t border-slate-200 dark:border-slate-700 pt-4">
               <Link
                 href="/campgrounds"
                 className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md transition hover:text-blue-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-blue-300 dark:hover:bg-slate-800"
@@ -70,7 +76,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
                 Campgrounds
               </Link>
               <Link
-                href="/create"
+                href="/campgrounds/new"
                 className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md transition hover:text-blue-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-blue-300 dark:hover:bg-slate-800"
                 onClick={closeMobileMenu}
               >

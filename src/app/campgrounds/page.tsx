@@ -52,6 +52,10 @@ function orderByFromSort(sort: SortOption) {
       return { price: 'desc' as const }
     case 'price-asc':
       return { price: 'asc' as const }
+    case 'newest':
+      return { createdAt: 'desc' as const }
+    case 'oldest':
+      return { createdAt: 'asc' as const }
     default:
       return { title: 'asc' as const }
   }

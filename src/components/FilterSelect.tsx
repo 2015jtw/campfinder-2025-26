@@ -1,7 +1,7 @@
 'use client'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 
-export type SortOption = 'alpha-desc' | 'alpha-asc' | 'rating-desc' | 'price-desc' | 'price-asc'
+export type SortOption = 'alpha-asc' | 'alpha-desc' | 'price-asc' | 'price-desc' | 'rating-desc' | 'newest' | 'oldest'
 
 // Icons
 function SortAsc({ className }: { className?: string }) {
@@ -26,11 +26,13 @@ function ChevronDown({ className }: { className?: string }) {
 }
 
 const OPTIONS: { value: SortOption; label: string; icon?: string }[] = [
-  { value: 'alpha-desc', label: 'Alphabetical (Z-A)', icon: '🔤' },
   { value: 'alpha-asc', label: 'Alphabetical (A-Z)', icon: '🔡' },
-  { value: 'rating-desc', label: 'Highest Rated', icon: '⭐' },
-  { value: 'price-desc', label: 'Price: High to Low', icon: '💰' },
+  { value: 'alpha-desc', label: 'Alphabetical (Z-A)', icon: '🔤' },
   { value: 'price-asc', label: 'Price: Low to High', icon: '💵' },
+  { value: 'price-desc', label: 'Price: High to Low', icon: '💰' },
+  { value: 'rating-desc', label: 'Highest Rated', icon: '⭐' },
+  { value: 'newest', label: 'Newest First', icon: '🆕' },
+  { value: 'oldest', label: 'Oldest First', icon: '📅' },
 ]
 
 export default function FilterSelect({ current }: { current: SortOption }) {
