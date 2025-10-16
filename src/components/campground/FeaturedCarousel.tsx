@@ -101,7 +101,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
           return (
             <Link
               key={cg.id}
-              href={`/campgrounds/${cg.id}`}
+              href={`/campgrounds/${cg.slug}`}
               data-card
               className="group snap-start shrink-0 w-64 rounded-xl border border-neutral-200 bg-white hover:shadow-xl hover:border-neutral-300 hover:-translate-y-1 transition-all duration-300"
             >

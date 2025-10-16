@@ -18,6 +18,7 @@ export type CampgroundsSearchParams = {
 // Type for featured carousel items
 export type FeaturedCarouselItem = {
   id: number
+  slug: string
   title: string
   price: number
   images: { url: string }[]

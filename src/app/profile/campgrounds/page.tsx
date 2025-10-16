@@ -8,6 +8,7 @@ export const revalidate = 0
 
 const select = {
   id: true,
+  slug: true,
   title: true,
   location: true,
   createdAt: true,
@@ -17,6 +18,7 @@ const select = {
 // Element type for one row returned by this query:
 type CampgroundRow = {
   id: number
+  slug: string
   title: string
   location: string
   createdAt: Date
@@ -95,7 +97,7 @@ export default async function CampgroundsPage() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {campgrounds.map((cg: CampgroundRow) => (
-              <Link key={cg.id} href={`/campgrounds/${cg.id}`} className="group">
+              <Link key={cg.id} href={`/campgrounds/${cg.slug}`} className="group">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
                   {cg.images[0]?.url ? (
                     <div className="relative h-48 w-full bg-gray-100">

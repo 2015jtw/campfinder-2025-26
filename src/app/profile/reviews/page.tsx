@@ -21,7 +21,7 @@ export default async function ReviewsPage() {
       rating: true,
       comment: true,
       createdAt: true,
-      campground: { select: { id: true, title: true } },
+      campground: { select: { id: true, slug: true, title: true } },
     },
   })) as any[]
 
@@ -77,7 +77,7 @@ export default async function ReviewsPage() {
                       <span className="text-sm font-medium text-gray-900">{rv.rating}/5</span>
                     </div>
                     <Link
-                      href={`/campgrounds/${rv.campground.id}`}
+                      href={`/campgrounds/${rv.campground.slug}`}
                       className="mt-1 block text-sm font-medium text-blue-600 hover:text-blue-700"
                     >
                       {rv.campground.title}
