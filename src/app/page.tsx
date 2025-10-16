@@ -4,7 +4,7 @@ export const revalidate = 60 // ISR is fine for public list
 import { prisma } from '@/lib/prisma'
 import { withRetry } from '@/lib/db'
 import Link from 'next/link'
-import FeaturedCarousel from '@/components/FeaturedCarousel'
+import FeaturedCarousel from '@/components/campground/FeaturedCarousel'
 
 export default async function HomePage() {
   const raw = (await withRetry(() =>

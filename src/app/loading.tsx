@@ -1,4 +1,4 @@
-import { CampgroundCardSkeleton } from '@/components/CampgroundCardSkeleton'
+import { CampgroundCardSkeleton } from '@/components/campground/CampgroundCardSkeleton'
 
 export default function Loading() {
   return (

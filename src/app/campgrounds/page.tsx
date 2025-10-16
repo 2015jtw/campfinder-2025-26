@@ -7,7 +7,7 @@ import { withRetry } from '@/lib/db'
 import ViewToggle from '@/components/ViewToggle'
 import FilterSelect, { SortOption } from '@/components/FilterSelect'
 import Pagination from '@/components/Pagination'
-import CampgroundCard from '@/components/CampgroundCard'
+import CampgroundCard from '@/components/campground/CampgroundCard'
 import { CampgroundsSearchParams } from '@/types'
 
 const PAGE_SIZE = 12

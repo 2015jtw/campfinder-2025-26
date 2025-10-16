@@ -40,7 +40,7 @@ export default async function Header() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink
-                href="/create"
+                href="/campgrounds/new"
                 className="rounded-md px-1 py-0.5 transition hover:text-blue-600 focus:text-blue-600 focus-visible:outline-none"
               >
                 Create
