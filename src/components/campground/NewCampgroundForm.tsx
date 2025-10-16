@@ -179,7 +179,7 @@ export default function NewCampgroundForm() {
             images={images}
             onChange={(imgs) => {
               setImages(imgs)
-              form.setValue('images', imgs as any, { shouldValidate: true })
+              form.setValue('images', imgs.map(img => ({ url: img.url })), { shouldValidate: true })
             }}
           />
           {form.formState.errors.images && (

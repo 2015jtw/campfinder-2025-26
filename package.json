@@ -8,7 +8,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "next link",
+    "lint": "next lint",
     "postinstall": "prisma generate"
   },
   "prisma": {

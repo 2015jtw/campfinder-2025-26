@@ -101,7 +101,6 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
 
     if (uploads.length > 0) {
       const next = [...images, ...uploads]
-      setImages(next)
       onChange(next)
     }
 
@@ -119,13 +118,7 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
 
     // Remove from local state
     const next = images.filter((i) => i.path !== path)
-    setImages(next)
     onChange(next)
-  }
-
-  function setImages(newImages: UploadedImage[]) {
-    // This function is just for internal consistency
-    // The actual state management is handled by the parent via onChange
   }
 
   return (
