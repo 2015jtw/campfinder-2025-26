@@ -68,7 +68,23 @@ export default function MainMap({
     }
 
     // Add campground markers with improved popup styling
+    console.log('Adding markers for', campgrounds.length, 'campgrounds')
     campgrounds.forEach((campground, index) => {
+      console.log(
+        `Adding marker ${index + 1}:`,
+        campground.title,
+        'at',
+        campground.latitude,
+        campground.longitude
+      )
+      
+      // Validate coordinates
+      if (!campground.latitude || !campground.longitude || 
+          isNaN(campground.latitude) || isNaN(campground.longitude)) {
+        console.warn(`Skipping marker for ${campground.title} - invalid coordinates:`, campground.latitude, campground.longitude)
+        return
+      }
+
       // Create improved popup content with better styling
       const popupContent = `
         <div style="
@@ -199,6 +215,26 @@ export default function MainMap({
 
       campgroundMarkersRef.current.push(marker)
     })
+
+    console.log('Added', campgroundMarkersRef.current.length, 'markers to map')
+
+    // Fit map to show all campgrounds if we have any
+    if (campgrounds.length > 0) {
+      const bounds = new mapboxgl.LngLatBounds()
+      campgrounds.forEach((c) => {
+        if (c.latitude && c.longitude) {
+          bounds.extend([c.longitude, c.latitude])
+        }
+      })
+
+      // Only fit bounds if we have valid bounds
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 10, // Don't zoom in too much
+        })
+      }
+    }
 
     // Add CSS for better popup styling
     const style = document.createElement('style')
