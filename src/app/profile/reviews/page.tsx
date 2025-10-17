@@ -3,10 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import UserReviewsClient from './UserReviewsClient'
 
-interface UserReviewsPageProps {
-  params: Promise<{ slug: string }>
-}
-
 async function getUserReviews(userId: string) {
   const reviews = await prisma.review.findMany({
     where: { userId },
@@ -32,7 +28,7 @@ async function getUserReviews(userId: string) {
   return reviews
 }
 
-export default async function UserReviewsPage({ params }: UserReviewsPageProps) {
+export default async function UserReviewsPage() {
   const supabase = await createClient()
   const {
     data: { user },

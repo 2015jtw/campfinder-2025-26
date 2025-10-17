@@ -5,6 +5,7 @@ import Review from '@/components/campground/Review'
 import { deleteReviewAction } from '@/app/campgrounds/actions'
 import { Star } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface Review {
   id: number
@@ -44,11 +45,12 @@ export default function UserReviewsClient({
 
       if (result.ok) {
         setReviews((prev) => prev.filter((review) => review.id !== reviewId))
+        toast.success('Review deleted successfully!')
       } else {
-        alert(result.error || 'Failed to delete review')
+        toast.error(result.error || 'Failed to delete review')
       }
     } catch (error) {
-      alert('An unexpected error occurred')
+      toast.error('An unexpected error occurred')
     }
   }
 
