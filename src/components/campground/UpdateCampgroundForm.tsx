@@ -1,76 +1,83 @@
-'use client';
+'use client'
 
-import { useFormStatus } from 'react-dom';
-import { updateCampgroundAction } from '@/app/campgrounds/actions';
-import { useTransition, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import type { UpdateCampgroundActionResult } from '@/lib/validations/campground';
-import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages';
-import { createClient } from '@/lib/supabase/client';
-import Image from 'next/image';
+import { useFormStatus } from 'react-dom'
+import { updateCampgroundAction } from '@/app/campgrounds/actions'
+import { useTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import type { UpdateCampgroundActionResult } from '@/lib/validations/campground'
+import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
+import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 type Campground = {
-  id: number; // Changed from string to number to match database schema
-  title: string;
-  description: string;
-  location: string;
-  price: number;
-  images: string[]; // Array of URLs that will be converted to newline-separated string
-};
+  id: number // Changed from string to number to match database schema
+  title: string
+  description: string
+  location: string
+  price: number
+  images: string[] // Array of URLs that will be converted to newline-separated string
+  latitude?: number | null
+  longitude?: number | null
+}
 
 export default function UpdateCampgroundForm({ campground }: { campground: Campground }) {
   // Convert existing URLs to UploadedImage format (with unique paths for existing images)
-  const existingImages: UploadedImage[] = (campground.images ?? []).map((url, index) => ({ 
-    url, 
-    path: `existing-${index}` // Unique identifier for existing images
-  }));
-  
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(existingImages);
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-  const supabase = createClient();
+  const existingImages: UploadedImage[] = (campground.images ?? []).map((url, index) => ({
+    url,
+    path: `existing-${index}`, // Unique identifier for existing images
+  }))
+
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(existingImages)
+  const [isPending, startTransition] = useTransition()
+  const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
 
   const handleSubmit = async (formData: FormData) => {
     // Add current images URLs to form data
-    const imageUrls = uploadedImages.map(img => img.url);
-    formData.set('images', imageUrls.join('\n'));
-    
+    const imageUrls = uploadedImages.map((img) => img.url)
+    formData.set('images', imageUrls.join('\n'))
+
     startTransition(async () => {
-      const result: UpdateCampgroundActionResult = await updateCampgroundAction(formData);
-      
+      setGeocodingStatus('🗺️ Checking location for updates...')
+
+      const result: UpdateCampgroundActionResult = await updateCampgroundAction(formData)
+
+      setGeocodingStatus(null)
+
       if (result.ok) {
-        toast.success('Campground updated successfully!');
-        router.push(`/campgrounds/${result.slug}`);
+        toast.success('Campground updated successfully!')
+        router.push(`/campgrounds/${result.slug}`)
       } else {
-        toast.error(result.error || 'Failed to update campground');
+        toast.error(result.error || 'Failed to update campground')
       }
-    });
-  };
+    })
+  }
 
   const handleImagesChange = (newImages: UploadedImage[]) => {
-    setUploadedImages(newImages);
-  };
+    setUploadedImages(newImages)
+  }
 
   // Custom remove handler that doesn't try to delete existing images from storage
   const customRemove = async (path: string) => {
     if (path.startsWith('existing-')) {
       // This is an existing image, just remove from state (don't delete from storage)
-      const next = uploadedImages.filter((i) => i.path !== path);
-      setUploadedImages(next);
+      const next = uploadedImages.filter((i) => i.path !== path)
+      setUploadedImages(next)
     } else {
       // This is a newly uploaded image, remove from both storage and state
-      const { error } = await supabase.storage.from('campground-images').remove([path]);
+      const { error } = await supabase.storage.from('campground-images').remove([path])
       if (error) {
-        console.error('Error removing file:', error);
-        toast.error('Failed to remove image');
-        return;
+        console.error('Error removing file:', error)
+        toast.error('Failed to remove image')
+        return
       }
-      
-      const next = uploadedImages.filter((i) => i.path !== path);
-      setUploadedImages(next);
+
+      const next = uploadedImages.filter((i) => i.path !== path)
+      setUploadedImages(next)
     }
-  };
+  }
 
   return (
     <form action={handleSubmit} className="space-y-4 rounded-2xl border bg-white p-4">
@@ -106,6 +113,12 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
             className="mt-1 w-full rounded-xl border px-3 py-2"
             required
           />
+          {geocodingStatus && <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>}
+          {campground.latitude && campground.longitude && (
+            <p className="text-xs text-gray-500 mt-1">
+              📍 Current coordinates: {campground.latitude.toFixed(6)}, {campground.longitude.toFixed(6)}
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium">Price (per night)</label>
@@ -129,78 +142,80 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
         />
       </div>
 
-      <SubmitButton isPending={isPending}>Save changes</SubmitButton>
+      <SubmitButton isPending={isPending} geocodingStatus={geocodingStatus}>
+        Save changes
+      </SubmitButton>
     </form>
-  );
+  )
 }
 
-function UpdateImageManager({ 
-  images, 
-  onChange, 
-  onRemove, 
-  maxImages 
-}: { 
-  images: UploadedImage[]; 
-  onChange: (images: UploadedImage[]) => void;
-  onRemove: (path: string) => Promise<void>;
-  maxImages: number;
+function UpdateImageManager({
+  images,
+  onChange,
+  onRemove,
+  maxImages,
+}: {
+  images: UploadedImage[]
+  onChange: (images: UploadedImage[]) => void
+  onRemove: (path: string) => Promise<void>
+  maxImages: number
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient()
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
+    if (!files || files.length === 0) return
+
     if (images.length + files.length > maxImages) {
-      setError(`You can only upload up to ${maxImages} images`);
-      return;
+      setError(`You can only upload up to ${maxImages} images`)
+      return
     }
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
-    const uploads: UploadedImage[] = [];
-    
+    const uploads: UploadedImage[] = []
+
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) {
-        console.warn(`Skipping non-image file: ${file.name}`);
-        continue;
+        console.warn(`Skipping non-image file: ${file.name}`)
+        continue
       }
 
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 5 * 1024 * 1024 // 5MB
       if (file.size > maxSize) {
-        setError(`File ${file.name} is too large. Maximum size is 5MB.`);
-        continue;
+        setError(`File ${file.name} is too large. Maximum size is 5MB.`)
+        continue
       }
 
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      const path = `${crypto.randomUUID()}.${ext}`;
-      
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      const path = `${crypto.randomUUID()}.${ext}`
+
       const { error: uploadError } = await supabase.storage
         .from('campground-images')
         .upload(path, file, {
           cacheControl: '3600',
           upsert: false,
-        });
+        })
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
-        setError(`Failed to upload ${file.name}`);
-        continue;
+        console.error('Upload error:', uploadError)
+        setError(`Failed to upload ${file.name}`)
+        continue
       }
 
-      const { data } = supabase.storage.from('campground-images').getPublicUrl(path);
-      uploads.push({ url: data.publicUrl, path });
+      const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
+      uploads.push({ url: data.publicUrl, path })
     }
 
     if (uploads.length > 0) {
-      const next = [...images, ...uploads];
-      onChange(next);
+      const next = [...images, ...uploads]
+      onChange(next)
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
     <div className="space-y-4">
@@ -278,23 +293,29 @@ function UpdateImageManager({
               strokeLinejoin="round"
             />
           </svg>
-          <p className="mt-2 text-sm text-gray-600">
-            Click the upload button above to add images
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Click the upload button above to add images</p>
         </div>
       )}
     </div>
-  );
+  )
 }
 
-function SubmitButton({ children, isPending }: { children: React.ReactNode; isPending: boolean }) {
+function SubmitButton({
+  children,
+  isPending,
+  geocodingStatus,
+}: {
+  children: React.ReactNode
+  isPending: boolean
+  geocodingStatus?: string | null
+}) {
   return (
     <button
       type="submit"
       disabled={isPending}
       className="rounded-xl bg-black px-4 py-2 text-white disabled:opacity-60"
     >
-      {isPending ? 'Saving…' : children}
+      {isPending ? (geocodingStatus ? 'Geocoding & Saving…' : 'Saving…') : children}
     </button>
-  );
+  )
 }

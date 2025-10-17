@@ -12,7 +12,17 @@ interface CampgroundDetailPageProps {
 async function getCampground(slug: string) {
   const campground = await prisma.campground.findUnique({
     where: { slug: slug },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      latitude: true,
+      longitude: true,
+      price: true,
+      slug: true,
+      createdAt: true,
+      userId: true,
       owner: {
         select: {
           id: true,
@@ -21,10 +31,21 @@ async function getCampground(slug: string) {
         },
       },
       images: {
+        select: {
+          id: true,
+          url: true,
+          sortOrder: true,
+        },
         orderBy: { sortOrder: 'asc' },
       },
       reviews: {
-        include: {
+        select: {
+          id: true,
+          rating: true,
+          title: true,
+          comment: true,
+          createdAt: true,
+          userId: true,
           user: {
             select: {
               id: true,

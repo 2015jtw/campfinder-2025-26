@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { SignOutButton } from './SignOutButton'
-import { SearchBar } from './SearchBar'
+import { SignOutButton } from './auth/SignOutButton'
+import { SearchBar } from './util/SearchBar'
 import type { User } from '@supabase/supabase-js'
 
 interface MobileMenuProps {

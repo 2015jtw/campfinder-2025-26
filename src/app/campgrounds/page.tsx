@@ -4,9 +4,9 @@ export const revalidate = 0
 
 import { prisma } from '@/lib/prisma'
 import { withRetry } from '@/lib/db'
-import ViewToggle from '@/components/ViewToggle'
-import FilterSelect, { SortOption } from '@/components/FilterSelect'
-import Pagination from '@/components/Pagination'
+import ViewToggle from '@/components/util/ViewToggle'
+import FilterSelect, { SortOption } from '@/components/util/FilterSelect'
+import Pagination from '@/components/util/Pagination'
 import CampgroundCard from '@/components/campground/CampgroundCard'
 import { CampgroundsSearchParams } from '@/types'
 

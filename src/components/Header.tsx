@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/navigation-menu'
 import { Button } from '@/components/ui/button'
 import { MobileMenu } from './MobileMenu'
-import { SignOutButton } from './SignOutButton'
-import { SearchBar } from './SearchBar'
+import { SignOutButton } from './auth/SignOutButton'
+import { SearchBar } from './util/SearchBar'
 
 export default async function Header() {
   const supabase = await createClient()

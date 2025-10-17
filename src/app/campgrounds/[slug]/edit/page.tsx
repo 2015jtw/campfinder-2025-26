@@ -24,8 +24,20 @@ export default async function EditCampgroundPage({ params }: EditCampgroundPageP
   // Fetch campground with images using slug
   const campground = await prisma.campground.findUnique({
     where: { slug: slug },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      price: true,
+      latitude: true,
+      longitude: true,
+      userId: true,
       images: {
+        select: {
+          url: true,
+          sortOrder: true
+        },
         orderBy: { sortOrder: 'asc' }
       }
     }
@@ -47,7 +59,9 @@ export default async function EditCampgroundPage({ params }: EditCampgroundPageP
     description: campground.description,
     location: campground.location,
     price: Number(campground.price), // Convert Decimal to number
-    images: campground.images.map(img => img.url)
+    images: campground.images.map(img => img.url),
+    latitude: campground.latitude ? Number(campground.latitude) : null,
+    longitude: campground.longitude ? Number(campground.longitude) : null
   }
 
   return (
