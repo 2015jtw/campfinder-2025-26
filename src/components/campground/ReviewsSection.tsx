@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Star, User, Plus } from 'lucide-react'
+import { Star, Plus } from 'lucide-react'
+import Review from './Review'
+import CreateReviewForm from './CreateReviewForm'
 
 interface Review {
   id: number
@@ -31,12 +32,10 @@ export default function ReviewsSection({
 }: ReviewsSectionProps) {
   const [showAddReview, setShowAddReview] = useState(false)
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date)
+  const handleReviewSuccess = () => {
+    setShowAddReview(false)
+    // Refresh the page to show the new review
+    window.location.reload()
   }
 
   const renderStars = (rating: number) => {
@@ -84,45 +83,11 @@ export default function ReviewsSection({
 
       {/* Add Review Form */}
       {showAddReview && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-3">Write a Review</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-              <div className="flex space-x-1">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <button key={i} className="text-gray-300 hover:text-yellow-400 transition-colors">
-                    <Star className="w-6 h-6" />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title (optional)
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Summarize your experience"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
-              <textarea
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Share your experience with other campers"
-              />
-            </div>
-            <div className="flex space-x-2">
-              <Button size="sm">Submit Review</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowAddReview(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
+        <CreateReviewForm
+          campgroundId={campgroundId}
+          onSuccess={handleReviewSuccess}
+          onCancel={() => setShowAddReview(false)}
+        />
       )}
 
       {/* Reviews List */}
@@ -135,38 +100,12 @@ export default function ReviewsSection({
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
-            <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                    {review.user.avatarUrl ? (
-                      <Image
-                        src={review.user.avatarUrl}
-                        alt={review.user.displayName || 'User'}
-                        width={32}
-                        height={32}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <User className="w-4 h-4 text-gray-600" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">
-                      {review.user.displayName || 'Anonymous'}
-                    </div>
-                    <div className="flex items-center">
-                      <div className="flex items-center mr-2">{renderStars(review.rating)}</div>
-                      <span className="text-sm text-gray-500">{formatDate(review.createdAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {review.title && <h4 className="font-medium text-gray-900 mb-2">{review.title}</h4>}
-
-              {review.comment && <p className="text-gray-700 leading-relaxed">{review.comment}</p>}
-            </div>
+            <Review
+              key={review.id}
+              review={review}
+              currentUserId={undefined}
+              onDelete={undefined}
+            />
           ))}
         </div>
       )}

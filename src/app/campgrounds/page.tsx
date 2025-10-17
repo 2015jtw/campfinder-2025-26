@@ -79,23 +79,32 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
           price: true, // Prisma.Decimal | null
           images: { select: { url: true }, take: 1 },
           _count: { select: { reviews: true } },
+          reviews: { select: { rating: true } },
         },
       })
     ),
     withRetry(() => prisma.campground.count()),
   ])) as [any[], number]
 
-  const rows: CampgroundCardData[] = rawRows.map((r) => ({
-    id: String(r.id),
-    slug: r.slug,
-    title: r.title,
-    location: r.location,
-    description: r.description,
-    price: r.price == null ? null : Number(r.price), // 🔁 Decimal -> number
-    images: r.images,
-    _avgRating: null,
-    _reviewsCount: r._count.reviews,
-  }))
+  const rows: CampgroundCardData[] = rawRows.map((r) => {
+    const avgRating =
+      r.reviews.length > 0
+        ? r.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+          r.reviews.length
+        : null
+
+    return {
+      id: String(r.id),
+      slug: r.slug,
+      title: r.title,
+      location: r.location,
+      description: r.description,
+      price: r.price == null ? null : Number(r.price), // 🔁 Decimal -> number
+      images: r.images,
+      _avgRating: avgRating,
+      _reviewsCount: r._count.reviews,
+    }
+  })
 
   return { rows, total }
 }

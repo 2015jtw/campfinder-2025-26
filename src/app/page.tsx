@@ -20,21 +20,30 @@ export default async function HomePage() {
         price: true,
         images: { select: { url: true }, take: 1 },
         _count: { select: { reviews: true } },
+        reviews: { select: { rating: true } },
       },
     })
   )) as any[]
 
-  const featured = raw.map((r) => ({
-    id: String(r.id),
-    slug: r.slug,
-    title: r.title,
-    location: r.location,
-    description: r.description,
-    images: r.images,
-    price: r.price === null ? null : Number(r.price), // ✅ Decimal -> number
-    _avgRating: null, // or your computed value
-    _reviewsCount: r._count.reviews,
-  }))
+  const featured = raw.map((r) => {
+    const avgRating =
+      r.reviews.length > 0
+        ? r.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+          r.reviews.length
+        : null
+
+    return {
+      id: String(r.id),
+      slug: r.slug,
+      title: r.title,
+      location: r.location,
+      description: r.description,
+      images: r.images,
+      price: r.price === null ? null : Number(r.price), // ✅ Decimal -> number
+      _avgRating: avgRating,
+      _reviewsCount: r._count.reviews,
+    }
+  })
 
   return (
     <main className="container mx-auto px-4 py-8 space-y-8">
