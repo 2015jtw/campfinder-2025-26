@@ -85,8 +85,14 @@ export default function CampgroundCard({
             )}
             {rating && (
               <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-md shadow-sm flex items-center gap-1">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="text-sm font-semibold">{rating.toFixed(1)}</span>
+                <div className="flex items-center">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3 h-3 ${i < Math.round(rating) ? 'text-amber-400 fill-current' : 'text-gray-300'}`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </AspectRatio>
@@ -122,8 +128,14 @@ export default function CampgroundCard({
         )}
         {rating && (
           <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-md flex items-center gap-1">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <span className="text-sm font-semibold">{rating.toFixed(1)}</span>
+            <div className="flex items-center">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star
+                  key={i}
+                  className={`w-3 h-3 ${i < Math.round(rating) ? 'text-amber-400 fill-current' : 'text-gray-300'}`}
+                />
+              ))}
+            </div>
           </div>
         )}
       </AspectRatio>

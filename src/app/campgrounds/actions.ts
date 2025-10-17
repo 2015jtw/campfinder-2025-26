@@ -12,6 +12,18 @@ import {
   type UpdateCampgroundActionResult,
 } from '@/lib/validations/campground'
 
+// Review validation schemas
+const CreateReviewSchema = z.object({
+  campgroundId: z.coerce.number().int().positive(),
+  rating: z.coerce.number().int().min(1).max(5),
+  title: z.string().optional(),
+  comment: z.string().min(1, 'Comment is required'),
+})
+
+type CreateReviewActionResult = { ok: true; id: number } | { ok: false; error: string }
+
+type DeleteReviewActionResult = { ok: true } | { ok: false; error: string }
+
 export async function createCampgroundAction(
   formData: FormData
 ): Promise<CreateCampgroundActionResult> {
@@ -207,5 +219,121 @@ export async function DeleteCampground(_prev: unknown, formData: FormData) {
     return { success: true }
   } catch (e: any) {
     return { error: e?.message ?? 'Delete failed' }
+  }
+}
+
+/** CREATE REVIEW */
+export async function createReviewAction(formData: FormData): Promise<CreateReviewActionResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { ok: false, error: 'Please log in to leave a review' }
+  }
+
+  const raw = {
+    campgroundId: formData.get('campgroundId'),
+    rating: formData.get('rating'),
+    title: formData.get('title'),
+    comment: formData.get('comment'),
+  }
+
+  const parsed = CreateReviewSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, error: 'Invalid form data' }
+  }
+
+  const data = parsed.data
+
+  try {
+    // Verify campground exists
+    const campground = await prisma.campground.findUnique({
+      where: { id: data.campgroundId },
+      select: { id: true },
+    })
+
+    if (!campground) {
+      return { ok: false, error: 'Campground not found' }
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        campgroundId: data.campgroundId,
+        userId: user.id,
+        rating: data.rating,
+        title: data.title || null,
+        comment: data.comment,
+      },
+      select: { id: true },
+    })
+
+    // Revalidate the campground page
+    const campgroundWithSlug = await prisma.campground.findUnique({
+      where: { id: data.campgroundId },
+      select: { slug: true },
+    })
+
+    if (campgroundWithSlug) {
+      revalidatePath(`/campgrounds/${campgroundWithSlug.slug}`)
+    }
+
+    return { ok: true, id: review.id }
+  } catch (e: any) {
+    console.error('Create review error:', e)
+    return { ok: false, error: 'Failed to create review' }
+  }
+}
+
+/** DELETE REVIEW */
+export async function deleteReviewAction(formData: FormData): Promise<DeleteReviewActionResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { ok: false, error: 'Please log in to delete a review' }
+  }
+
+  const reviewId = formData.get('reviewId')
+  if (!reviewId) {
+    return { ok: false, error: 'Review ID is required' }
+  }
+
+  try {
+    // Check if review exists and user owns it
+    const review = await prisma.review.findUnique({
+      where: { id: Number(reviewId) },
+      select: { id: true, userId: true, campgroundId: true },
+    })
+
+    if (!review) {
+      return { ok: false, error: 'Review not found' }
+    }
+
+    if (review.userId !== user.id) {
+      return { ok: false, error: 'You can only delete your own reviews' }
+    }
+
+    await prisma.review.delete({
+      where: { id: review.id },
+    })
+
+    // Revalidate the campground page
+    const campground = await prisma.campground.findUnique({
+      where: { id: review.campgroundId },
+      select: { slug: true },
+    })
+
+    if (campground) {
+      revalidatePath(`/campgrounds/${campground.slug}`)
+    }
+
+    return { ok: true }
+  } catch (e: any) {
+    console.error('Delete review error:', e)
+    return { ok: false, error: 'Failed to delete review' }
   }
 }
