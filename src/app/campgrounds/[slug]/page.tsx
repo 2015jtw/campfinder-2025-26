@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import CampgroundDetailCard from '@/components/campground/CampgroundDetailCard'
-import MapSection from '@/components/campground/MapSection'
+import MapSection from '@/components/campground/CampgroundDetailMap'
 import ReviewsSection from '@/components/campground/ReviewsSection'
+import CampgroundDetailMap from '@/components/campground/CampgroundDetailMap'
 
 interface CampgroundDetailPageProps {
   params: Promise<{ slug: string }>
@@ -96,7 +97,7 @@ export default async function CampgroundDetailPage({ params }: CampgroundDetailP
           {/* Right Column - Map and Reviews */}
           <div className="space-y-8">
             {/* Map Section */}
-            <MapSection
+            <CampgroundDetailMap
               latitude={campground.latitude}
               longitude={campground.longitude}
               location={campground.location}

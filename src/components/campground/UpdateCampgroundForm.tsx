@@ -37,7 +37,7 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
   const handleSubmit = async (formData: FormData) => {
     // Add current images URLs to form data
     const imageUrls = uploadedImages.map((img) => img.url)
-    formData.set('images', imageUrls.join('\n'))
+    formData.set('images', JSON.stringify(imageUrls))
 
     startTransition(async () => {
       setGeocodingStatus('🗺️ Checking location for updates...')
@@ -114,11 +114,15 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
             required
           />
           {geocodingStatus && <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>}
-          {campground.latitude && campground.longitude && (
-            <p className="text-xs text-gray-500 mt-1">
-              📍 Current coordinates: {campground.latitude.toFixed(6)}, {campground.longitude.toFixed(6)}
-            </p>
-          )}
+          {campground.latitude !== null &&
+            campground.latitude !== undefined &&
+            campground.longitude !== null &&
+            campground.longitude !== undefined && (
+              <p className="text-xs text-gray-500 mt-1">
+                📍 Current coordinates: {campground.latitude.toFixed(6)},{' '}
+                {campground.longitude.toFixed(6)}
+              </p>
+            )}
         </div>
         <div>
           <label className="block text-sm font-medium">Price (per night)</label>
@@ -189,7 +193,20 @@ function UpdateImageManager({
         continue
       }
 
-      const ext = file.name.split('.').pop()?.toLowerCase()
+      let ext = file.name.split('.').pop()?.toLowerCase()
+      // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
+      if (!ext || ext === file.name.toLowerCase()) {
+        // Map common image MIME types to extensions
+        const mimeToExt: Record<string, string> = {
+          'image/jpeg': 'jpg',
+          'image/png': 'png',
+          'image/gif': 'gif',
+          'image/webp': 'webp',
+          'image/bmp': 'bmp',
+          'image/svg+xml': 'svg',
+        }
+        ext = mimeToExt[file.type] || 'jpg'
+      }
       const path = `${crypto.randomUUID()}.${ext}`
 
       const { error: uploadError } = await supabase.storage

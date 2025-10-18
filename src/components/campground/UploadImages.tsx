@@ -25,13 +25,17 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       setIsAuthenticated(!!session)
     }
     checkAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session)
     })
 
@@ -40,13 +44,13 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return
-    
+
     // Check authentication first
     if (!isAuthenticated) {
       setError('You must be logged in to upload images')
       return
     }
-    
+
     // Check if adding these files would exceed the limit
     if (images.length + files.length > maxImages) {
       setError(`You can only upload up to ${maxImages} images`)
@@ -57,7 +61,7 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
     setError(null)
 
     const uploads: UploadedImage[] = []
-    
+
     for (const file of Array.from(files)) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
@@ -72,22 +76,36 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
         continue
       }
 
-      const ext = file.name.split('.').pop()?.toLowerCase()
+      let ext = file.name.split('.').pop()?.toLowerCase()
+      // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
+      if (!ext || ext === file.name.toLowerCase()) {
+        // Map common image MIME types to extensions
+        const mimeToExt: Record<string, string> = {
+          'image/jpeg': 'jpg',
+          'image/png': 'png',
+          'image/gif': 'gif',
+          'image/webp': 'webp',
+          'image/bmp': 'bmp',
+          'image/svg+xml': 'svg',
+        }
+        ext = mimeToExt[file.type] || 'jpg'
+      }
       const path = `${crypto.randomUUID()}.${ext}`
-      
+
       // Ensure we have a valid session before uploading
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
       if (sessionError || !session) {
         setError('Authentication required for file upload')
         continue
       }
-      
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false,
-        })
+
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      })
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
@@ -136,14 +154,10 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
         />
         {images.length >= maxImages && (
-          <p className="text-sm text-amber-600 mt-1">
-            Maximum number of images reached
-          </p>
+          <p className="text-sm text-amber-600 mt-1">Maximum number of images reached</p>
         )}
         {!isAuthenticated && (
-          <p className="text-sm text-red-600 mt-1">
-            Please log in to upload images
-          </p>
+          <p className="text-sm text-red-600 mt-1">Please log in to upload images</p>
         )}
       </div>
 
@@ -207,9 +221,7 @@ export default function UploadImages({ images, onChange, maxImages = 10 }: Uploa
               strokeLinejoin="round"
             />
           </svg>
-          <p className="mt-2 text-sm text-gray-600">
-            Click the upload button above to add images
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Click the upload button above to add images</p>
         </div>
       )}
     </div>

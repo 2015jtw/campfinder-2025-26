@@ -44,7 +44,20 @@ export default function EditProfileForm({
       }
 
       // Generate unique filename
-      const ext = file.name.split('.').pop() || 'jpg'
+      let ext = file.name.split('.').pop()?.toLowerCase()
+      // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
+      if (!ext || ext === file.name.toLowerCase()) {
+        // Map common image MIME types to extensions
+        const mimeToExt: Record<string, string> = {
+          'image/jpeg': 'jpg',
+          'image/png': 'png',
+          'image/gif': 'gif',
+          'image/webp': 'webp',
+          'image/bmp': 'bmp',
+          'image/svg+xml': 'svg',
+        }
+        ext = mimeToExt[file.type] || 'jpg'
+      }
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`
 
       // Upload to Supabase Storage

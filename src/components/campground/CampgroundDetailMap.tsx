@@ -3,16 +3,20 @@
 import { MapPin } from 'lucide-react'
 import MainMap from '@/components/maps/MainMap'
 
-interface MapSectionProps {
+interface CampgroundDetailMapProps {
   latitude: number | null
   longitude: number | null
   location: string
 }
 
-export default function MapSection({ latitude, longitude, location }: MapSectionProps) {
+export default function CampgroundDetailMap({
+  latitude,
+  longitude,
+  location,
+}: CampgroundDetailMapProps) {
   // Convert to numbers (in case they come as Decimals from Prisma)
-  const lat = latitude ? Number(latitude) : null
-  const lng = longitude ? Number(longitude) : null
+  const lat = latitude !== null ? Number(latitude) : null
+  const lng = longitude !== null ? Number(longitude) : null
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -21,7 +25,7 @@ export default function MapSection({ latitude, longitude, location }: MapSection
         <h2 className="text-xl font-semibold text-gray-900">Location</h2>
       </div>
 
-      {lat && lng ? (
+      {lat !== null && lng !== null ? (
         <div className="h-64 rounded-lg overflow-hidden">
           <MainMap
             latitude={lat}
@@ -46,13 +50,13 @@ export default function MapSection({ latitude, longitude, location }: MapSection
         <div className="flex items-start justify-between">
           <div>
             <p className="font-medium text-gray-900">{location}</p>
-            {lat && lng && (
+            {lat !== null && lng !== null && (
               <p className="text-sm text-gray-500 mt-1">
                 {lat.toFixed(6)}, {lng.toFixed(6)}
               </p>
             )}
           </div>
-          {lat && lng && (
+          {lat !== null && lng !== null && (
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
               target="_blank"
