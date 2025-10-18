@@ -27,6 +27,7 @@ export default function NewCampgroundForm() {
   const [images, setImages] = useState<UploadedImage[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null)
 
   const form = useForm<CreateCampgroundInput>({
     resolver: zodResolver(CreateCampgroundSchema),
@@ -85,6 +86,7 @@ export default function NewCampgroundForm() {
         suppressHydrationWarning
         action={async (formData: FormData) => {
           setIsSubmitting(true)
+          setGeocodingStatus('🗺️ Geocoding location...')
 
           // Add form values to FormData since we're using controlled inputs
           const formValues = form.getValues()
@@ -95,6 +97,7 @@ export default function NewCampgroundForm() {
           formData.set('images', JSON.stringify(images))
 
           const res = await createCampgroundAction(formData)
+          setGeocodingStatus(null)
 
           if (res.ok) {
             toast.success('Campground created successfully!')
@@ -151,6 +154,9 @@ export default function NewCampgroundForm() {
                   <Input placeholder="Arlington, Virginia" {...field} />
                 </FormControl>
                 <FormMessage />
+                {geocodingStatus && (
+                  <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>
+                )}
               </FormItem>
             )}
           />
@@ -214,7 +220,10 @@ export default function NewCampgroundForm() {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
-            {isSubmitting ? 'Creating...' : 'Create Campground'}
+            {isSubmitting 
+              ? (geocodingStatus ? 'Geocoding & Creating...' : 'Creating...') 
+              : 'Create Campground'
+            }
           </Button>
         </div>
       </form>

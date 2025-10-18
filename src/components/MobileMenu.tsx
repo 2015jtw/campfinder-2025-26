@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { SignOutButton } from './SignOutButton'
-import { SearchBar } from './SearchBar'
+import { SignOutButton } from './auth/SignOutButton'
+import { SearchBar } from './util/SearchBar'
 import type { User } from '@supabase/supabase-js'
 
 interface MobileMenuProps {
@@ -27,8 +27,8 @@ export function MobileMenu({ user }: MobileMenuProps) {
       {/* Mobile Menu Button */}
       <Button
         variant="ghost"
-        size="sm"
-        className="md:hidden cursor-pointer"
+        size="default"
+        className="min-[1200px]:hidden cursor-pointer"
         onClick={toggleMobileMenu}
         aria-label="Toggle mobile menu"
       >
@@ -59,10 +59,10 @@ export function MobileMenu({ user }: MobileMenuProps) {
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="absolute top-full left-0 right-0 md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 backdrop-blur dark:bg-slate-950/95 z-50">
+        <div className="absolute top-full left-0 right-0 min-[1200px]:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 backdrop-blur dark:bg-slate-950/95 z-50">
           <div className="px-4 py-4 space-y-4">
             {/* Mobile Search Bar */}
-            <div className="pb-4">
+            <div className="pb-4 w-full">
               <SearchBar onResultClick={closeMobileMenu} />
             </div>
 
@@ -70,14 +70,14 @@ export function MobileMenu({ user }: MobileMenuProps) {
             <div className="space-y-2 border-t border-slate-200 dark:border-slate-700 pt-4">
               <Link
                 href="/campgrounds"
-                className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md transition hover:text-blue-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-blue-300 dark:hover:bg-slate-800"
+                className="block px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
                 onClick={closeMobileMenu}
               >
                 Campgrounds
               </Link>
               <Link
                 href="/campgrounds/new"
-                className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md transition hover:text-blue-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-blue-300 dark:hover:bg-slate-800"
+                className="block px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
                 onClick={closeMobileMenu}
               >
                 Create
@@ -90,7 +90,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
                 <div className="space-y-2">
                   <Link
                     href="/profile"
-                    className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md transition hover:text-blue-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-blue-300 dark:hover:bg-slate-800"
+                    className="block px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
                     onClick={closeMobileMenu}
                   >
                     Profile
@@ -101,7 +101,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
                 </div>
               ) : (
                 <Link href="/login" onClick={closeMobileMenu}>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="default" className="w-full text-base font-medium">
                     Login
                   </Button>
                 </Link>

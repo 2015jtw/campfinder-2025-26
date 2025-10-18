@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import CampgroundDetailCard from '@/components/campground/CampgroundDetailCard'
-import MapSection from '@/components/campground/MapSection'
+import MapSection from '@/components/campground/CampgroundDetailMap'
 import ReviewsSection from '@/components/campground/ReviewsSection'
+import CampgroundDetailMap from '@/components/campground/CampgroundDetailMap'
 
 interface CampgroundDetailPageProps {
   params: Promise<{ slug: string }>
@@ -12,7 +13,17 @@ interface CampgroundDetailPageProps {
 async function getCampground(slug: string) {
   const campground = await prisma.campground.findUnique({
     where: { slug: slug },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      location: true,
+      latitude: true,
+      longitude: true,
+      price: true,
+      slug: true,
+      createdAt: true,
+      userId: true,
       owner: {
         select: {
           id: true,
@@ -21,10 +32,21 @@ async function getCampground(slug: string) {
         },
       },
       images: {
+        select: {
+          id: true,
+          url: true,
+          sortOrder: true,
+        },
         orderBy: { sortOrder: 'asc' },
       },
       reviews: {
-        include: {
+        select: {
+          id: true,
+          rating: true,
+          title: true,
+          comment: true,
+          createdAt: true,
+          userId: true,
           user: {
             select: {
               id: true,
@@ -75,7 +97,7 @@ export default async function CampgroundDetailPage({ params }: CampgroundDetailP
           {/* Right Column - Map and Reviews */}
           <div className="space-y-8">
             {/* Map Section */}
-            <MapSection
+            <CampgroundDetailMap
               latitude={campground.latitude}
               longitude={campground.longitude}
               location={campground.location}

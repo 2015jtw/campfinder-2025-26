@@ -24,6 +24,39 @@ type CreateReviewActionResult = { ok: true; id: number } | { ok: false; error: s
 
 type DeleteReviewActionResult = { ok: true } | { ok: false; error: string }
 
+// Geocoding helper function
+async function geocodeLocation(location: string): Promise<{ latitude: number; longitude: number } | null> {
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  if (!token) {
+    console.warn('Missing NEXT_PUBLIC_MAPBOX_TOKEN for geocoding')
+    return null
+  }
+
+  try {
+    const query = encodeURIComponent(location)
+    const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${query}&access_token=${token}&limit=1`
+    
+    const res = await fetch(url)
+    if (!res.ok) {
+      console.error('Geocoding failed:', res.status)
+      return null
+    }
+
+    const json = await res.json()
+    const feature = json?.features?.[0]
+    if (!feature?.geometry?.coordinates) {
+      console.error('No coordinates found for location:', location)
+      return null
+    }
+
+    const [longitude, latitude] = feature.geometry.coordinates
+    return { latitude, longitude }
+  } catch (error) {
+    console.error('Geocoding error:', error)
+    return null
+  }
+}
+
 export async function createCampgroundAction(
   formData: FormData
 ): Promise<CreateCampgroundActionResult> {
@@ -61,6 +94,20 @@ export async function createCampgroundAction(
 
   const data = parsed.data
 
+  // Geocode the location if coordinates are not provided
+  let latitude = data.latitude
+  let longitude = data.longitude
+
+  if ((!latitude || !longitude) && data.location) {
+    console.log('Geocoding location:', data.location)
+    const coords = await geocodeLocation(data.location)
+    if (coords) {
+      latitude = coords.latitude
+      longitude = coords.longitude
+      console.log('Geocoded coordinates:', latitude, longitude)
+    }
+  }
+
   // Generate unique slug from title
   const slug = slugify(data.title)
   let uniqueSlug = slug
@@ -80,8 +127,8 @@ export async function createCampgroundAction(
         description: data.description,
         price: data.price, // Prisma handles Decimal conversion from string
         location: data.location,
-        latitude: data.latitude ?? 0.0,
-        longitude: data.longitude ?? 0.0,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
         userId: user.id,
         images: {
           create: data.images.map((img: { url: string }, index: number) => ({
@@ -144,7 +191,7 @@ export async function updateCampgroundAction(
   // Check if campground exists and verify ownership
   const cg = await prisma.campground.findUnique({
     where: { id: parsed.id },
-    select: { userId: true },
+    select: { userId: true, location: true, latitude: true, longitude: true },
   })
 
   if (!cg) {
@@ -152,6 +199,20 @@ export async function updateCampgroundAction(
   }
   if (cg.userId !== user.id) {
     return { ok: false, error: 'Forbidden - you can only edit your own campgrounds' }
+  }
+
+  // Geocode if location has changed and no coordinates exist or location is different
+  let latitude = cg.latitude
+  let longitude = cg.longitude
+
+  if (parsed.location !== cg.location && parsed.location) {
+    console.log('Location changed, geocoding new location:', parsed.location)
+    const coords = await geocodeLocation(parsed.location)
+    if (coords) {
+      latitude = coords.latitude
+      longitude = coords.longitude
+      console.log('Updated coordinates:', latitude, longitude)
+    }
   }
 
   let updatedCampground
@@ -163,6 +224,8 @@ export async function updateCampgroundAction(
         description: parsed.description,
         location: parsed.location,
         price: parsed.price,
+        latitude,
+        longitude,
         images: {
           deleteMany: {}, // Delete existing images
           create: parsed.images.map((url, index) => ({
@@ -336,4 +399,56 @@ export async function deleteReviewAction(formData: FormData): Promise<DeleteRevi
     console.error('Delete review error:', e)
     return { ok: false, error: 'Failed to delete review' }
   }
+}
+
+export async function geocodeAllCampgrounds() {
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  if (!token) throw new Error('Missing NEXT_PUBLIC_MAPBOX_TOKEN')
+
+  // Only geocode those missing coordinates
+  const campgrounds = await prisma.campground.findMany({
+    where: { OR: [{ latitude: null }, { longitude: null }] },
+    select: { id: true, title: true, location: true },
+  })
+
+  let updated = 0
+  const failed: { id: number; reason: string }[] = []
+
+  for (const c of campgrounds) {
+    if (!c.location) continue
+
+    // Geocoding per Mapbox Search JS guide
+    const query = encodeURIComponent(c.location)
+    const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${query}&access_token=${token}&limit=1`
+
+    try {
+      const res = await fetch(url)
+      if (!res.ok) {
+        failed.push({ id: c.id, reason: `HTTP ${res.status}` })
+        continue
+      }
+
+      const json = await res.json()
+      const feature = json?.features?.[0]
+      if (!feature?.geometry?.coordinates) {
+        failed.push({ id: c.id, reason: 'No coordinates found' })
+        continue
+      }
+
+      const [longitude, latitude] = feature.geometry.coordinates
+
+      await prisma.campground.update({
+        where: { id: c.id },
+        data: { latitude, longitude },
+      })
+      updated++
+    } catch (e: any) {
+      failed.push({ id: c.id, reason: e?.message || 'Request failed' })
+    }
+
+    // Respect API rate limits
+    await new Promise((r) => setTimeout(r, 150))
+  }
+
+  return { total: campgrounds.length, updated, failed }
 }
