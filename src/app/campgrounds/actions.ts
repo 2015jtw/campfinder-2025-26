@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { randomUUID } from 'crypto'
 import {
   CreateCampgroundSchema,
   slugify,
@@ -69,6 +70,39 @@ export async function createCampgroundAction(
     redirect('/login')
   }
 
+  // Handle file uploads if present
+  const imageCount = parseInt(String(formData.get('imageCount') ?? '0'))
+  const uploadedImages: { url: string }[] = []
+  
+  if (imageCount > 0) {
+    // Upload files to Supabase storage
+    for (let i = 0; i < imageCount; i++) {
+      const file = formData.get(`imageFile_${i}`) as File
+      if (file && file.size > 0) {
+        try {
+          // Generate unique filename
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+          const filename = `${crypto.randomUUID()}.${ext}`
+          const path = `temp/${filename}` // Temporary path until we have campground ID
+          
+          const { error: uploadError } = await supabase.storage
+            .from('campground-images')
+            .upload(path, file, {
+              cacheControl: '3600',
+              upsert: false,
+            })
+
+          if (!uploadError) {
+            const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
+            uploadedImages.push({ url: data.publicUrl })
+          }
+        } catch (error) {
+          console.error('Error uploading file:', error)
+        }
+      }
+    }
+  }
+
   const raw = {
     title: String(formData.get('title') ?? ''),
     description: String(formData.get('description') ?? ''),
@@ -76,17 +110,15 @@ export async function createCampgroundAction(
     location: String(formData.get('location') ?? ''),
     latitude: formData.get('latitude') ? Number(formData.get('latitude')) : undefined,
     longitude: formData.get('longitude') ? Number(formData.get('longitude')) : undefined,
-    images: (() => {
-      const json = String(formData.get('images') ?? '[]')
-      try {
-        return JSON.parse(json)
-      } catch {
-        return []
-      }
-    })(),
+    images: uploadedImages,
   }
 
-  const parsed = CreateCampgroundSchema.safeParse(raw)
+  // Use a modified schema that allows empty images for new campgrounds
+  const CreateCampgroundSchemaWithOptionalImages = CreateCampgroundSchema.omit({ images: true }).extend({
+    images: z.array(z.object({ url: z.string().url() })).optional().default([])
+  })
+  
+  const parsed = CreateCampgroundSchemaWithOptionalImages.safeParse(raw)
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors
     return { ok: false, errors: fieldErrors }
@@ -94,17 +126,24 @@ export async function createCampgroundAction(
 
   const data = parsed.data
 
-  // Geocode the location if coordinates are not provided
+  // Check if manual coordinates were provided (from map pin)
+  const useManualCoordinates = formData.get('useManualCoordinates') === 'true'
   let latitude = data.latitude
   let longitude = data.longitude
 
-  if ((!latitude || !longitude) && data.location) {
-    console.log('Geocoding location:', data.location)
+  if (useManualCoordinates && latitude !== undefined && longitude !== undefined) {
+    // User dropped a pin on the map - use these coordinates as source of truth
+    console.log('✅ Using manual coordinates from map pin:', { latitude, longitude })
+  } else if ((!latitude || !longitude) && data.location) {
+    // No manual coordinates - fall back to geocoding the location
+    console.log('🗺️ Geocoding location:', data.location)
     const coords = await geocodeLocation(data.location)
     if (coords) {
       latitude = coords.latitude
       longitude = coords.longitude
-      console.log('Geocoded coordinates:', latitude, longitude)
+      console.log('✅ Geocoded coordinates:', latitude, longitude)
+    } else {
+      console.warn('⚠️ Geocoding failed, creating campground without coordinates')
     }
   }
 
@@ -131,7 +170,7 @@ export async function createCampgroundAction(
         longitude: longitude ?? null,
         userId: user.id,
         images: {
-          create: data.images.map((img: { url: string }, index: number) => ({
+          create: (data.images || []).map((img: { url: string }, index: number) => ({
             url: img.url,
             sortOrder: index,
           })),
@@ -201,18 +240,33 @@ export async function updateCampgroundAction(
     return { ok: false, error: 'Forbidden - you can only edit your own campgrounds' }
   }
 
-  // Geocode if location has changed and no coordinates exist or location is different
+  // Determine coordinates with priority: manual > existing > geocoding
+  const useManualCoordinates = formData.get('useManualCoordinates') === 'true'
+  const manualLat = formData.get('latitude')
+  const manualLng = formData.get('longitude')
+  
   let latitude = cg.latitude
   let longitude = cg.longitude
 
-  if (parsed.location !== cg.location && parsed.location) {
-    console.log('Location changed, geocoding new location:', parsed.location)
+  if (useManualCoordinates && manualLat && manualLng) {
+    // User dropped a pin on the map - use these coordinates as source of truth
+    latitude = parseFloat(manualLat as string)
+    longitude = parseFloat(manualLng as string)
+    console.log('✅ Using manual coordinates from map pin:', { latitude, longitude })
+  } else if (parsed.location !== cg.location && parsed.location) {
+    // Location text changed and no manual coordinates - geocode the new location
+    console.log('🗺️ Location changed, geocoding new location:', parsed.location)
     const coords = await geocodeLocation(parsed.location)
     if (coords) {
       latitude = coords.latitude
       longitude = coords.longitude
-      console.log('Updated coordinates:', latitude, longitude)
+      console.log('✅ Updated coordinates via geocoding:', latitude, longitude)
+    } else {
+      console.warn('⚠️ Geocoding failed, keeping existing coordinates')
+      // Keep existing coordinates on geocoding failure
     }
+  } else {
+    console.log('ℹ️ Keeping existing coordinates:', { latitude, longitude })
   }
 
   let updatedCampground

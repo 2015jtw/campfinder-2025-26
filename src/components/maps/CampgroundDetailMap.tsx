@@ -1,22 +1,77 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { MapPin } from 'lucide-react'
-import MainMap from '@/components/maps/MainMap'
+import mapboxgl from 'mapbox-gl'
 
 interface CampgroundDetailMapProps {
   latitude: number | null
   longitude: number | null
   location: string
+  zoom?: number
+  height?: number
+  styleUrl?: string
 }
 
 export default function CampgroundDetailMap({
   latitude,
   longitude,
   location,
+  zoom = 11,
+  height = 280,
+  styleUrl = 'mapbox://styles/mapbox/streets-v12',
 }: CampgroundDetailMapProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<mapboxgl.Map | null>(null)
+
   // Convert to numbers (in case they come as Decimals from Prisma)
   const lat = latitude !== null ? Number(latitude) : null
   const lng = longitude !== null ? Number(longitude) : null
+
+  useEffect(() => {
+    if (!containerRef.current || !Number.isFinite(lat) || !Number.isFinite(lng)) return
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    if (!token) return
+    mapboxgl.accessToken = token
+
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: styleUrl,
+      center: [lng!, lat!], // IMPORTANT: [lng, lat] order for Mapbox
+      zoom,
+    })
+    mapRef.current = map
+
+    // Add zoom controls
+    map.addControl(new mapboxgl.NavigationControl({ showZoom: true }), 'top-right')
+
+    // Add single marker with popup
+    new mapboxgl.Marker({
+      color: '#059669',
+      anchor: 'bottom',
+    })
+      .setLngLat([lng!, lat!])
+      .setPopup(
+        new mapboxgl.Popup({ offset: 12 }).setHTML(`
+            <div style="padding: 8px; font-family: system-ui;">
+              <strong style="font-size: 14px;">${location}</strong>
+            </div>
+          `)
+      )
+      .addTo(map)
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+    }
+  }, [lat, lng, zoom, styleUrl, location])
+
+  // If lat/lng change on client navigation, update smoothly
+  useEffect(() => {
+    if (!mapRef.current || !Number.isFinite(lat) || !Number.isFinite(lng)) return
+    mapRef.current.easeTo({ center: [lng!, lat!], zoom, duration: 400 })
+  }, [lat, lng, zoom])
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -26,15 +81,11 @@ export default function CampgroundDetailMap({
       </div>
 
       {lat !== null && lng !== null ? (
-        <div className="h-64 rounded-lg overflow-hidden">
-          <MainMap
-            latitude={lat}
-            longitude={lng}
-            zoom={13}
-            height={256}
-            showMarker={true}
-          />
-        </div>
+        <div
+          ref={containerRef}
+          style={{ height, width: '100%' }}
+          className="rounded-2xl overflow-hidden"
+        />
       ) : (
         <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
           <div className="text-center text-gray-500">

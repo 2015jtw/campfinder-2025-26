@@ -3,8 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { CreateCampgroundSchema, type CreateCampgroundInput } from '@/lib/validations/campground'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
+import MapPinSelector from '@/components/maps/MapPinSelector'
 import { createCampgroundAction } from '@/app/campgrounds/actions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -20,14 +21,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form'
 
 export default function NewCampgroundForm() {
   const router = useRouter()
   const [images, setImages] = useState<UploadedImage[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null)
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   const form = useForm<CreateCampgroundInput>({
     resolver: zodResolver(CreateCampgroundSchema),
@@ -44,6 +48,11 @@ export default function NewCampgroundForm() {
   // Handle hydration mismatch from browser extensions
   useEffect(() => {
     setIsHydrated(true)
+  }, [])
+
+  // Stable callback identity prevents extra re-renders
+  const handleFilesChange = useCallback((files: File[]) => {
+    setImageFiles(files)
   }, [])
 
   // Show loading skeleton during hydration
@@ -86,15 +95,27 @@ export default function NewCampgroundForm() {
         suppressHydrationWarning
         action={async (formData: FormData) => {
           setIsSubmitting(true)
-          setGeocodingStatus('🗺️ Geocoding location...')
 
-          // Add form values to FormData since we're using controlled inputs
+          // Add form values to FormData
           const formValues = form.getValues()
           formData.set('title', formValues.title)
           formData.set('description', formValues.description)
           formData.set('price', formValues.price)
           formData.set('location', formValues.location)
-          formData.set('images', JSON.stringify(images))
+          // For new campgrounds, append the actual files to FormData
+          imageFiles.forEach((file, index) => {
+            formData.append(`imageFile_${index}`, file);
+          });
+          formData.set('imageCount', imageFiles.length.toString());
+
+          // Add coordinates if manually set (these take precedence over geocoding)
+          if (coordinates) {
+            formData.set('latitude', coordinates.lat.toString())
+            formData.set('longitude', coordinates.lng.toString())
+            formData.set('useManualCoordinates', 'true')
+          } else {
+            setGeocodingStatus('🗺️ Geocoding location...')
+          }
 
           const res = await createCampgroundAction(formData)
           setGeocodingStatus(null)
@@ -154,9 +175,7 @@ export default function NewCampgroundForm() {
                   <Input placeholder="Arlington, Virginia" {...field} />
                 </FormControl>
                 <FormMessage />
-                {geocodingStatus && (
-                  <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>
-                )}
+                {geocodingStatus && <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>}
               </FormItem>
             )}
           />
@@ -181,15 +200,42 @@ export default function NewCampgroundForm() {
           />
         </div>
 
+        {/* Map Pin Selector */}
+        <FormItem>
+          <FormLabel>Pin Location on Map (Optional)</FormLabel>
+          <MapPinSelector
+            latitude={coordinates?.lat}
+            longitude={coordinates?.lng}
+            onCoordinatesChange={(lat, lng) => setCoordinates({ lat, lng })}
+            onClear={() => setCoordinates(null)}
+            height={400}
+          />
+          <FormDescription>
+            Drop a pin on the map for precise coordinates, or leave empty to geocode the location
+            automatically
+          </FormDescription>
+        </FormItem>
+
         {/* Images */}
         <FormItem>
           <FormLabel>Images</FormLabel>
           <UploadImages
+            campgroundId="new" // temporary ID for new campgrounds
             images={images}
             onChange={(imgs) => {
               setImages(imgs)
-              form.setValue('images', imgs.map(img => ({ url: img.url })), { shouldValidate: true })
+              form.setValue(
+                'images',
+                imgs.map((img) => ({ url: img.url })),
+                { shouldValidate: true }
+              )
             }}
+            onFilesChange={handleFilesChange}
+            onComplete={(completedItems) => {
+              console.log('Upload completed:', completedItems)
+            }}
+            autoRecord={false} // Don't record in DB until campground is created
+            maxImages={10}
           />
           {form.formState.errors.images && (
             <FormMessage>{form.formState.errors.images.message}</FormMessage>
@@ -219,11 +265,21 @@ export default function NewCampgroundForm() {
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
-            {isSubmitting 
-              ? (geocodingStatus ? 'Geocoding & Creating...' : 'Creating...') 
-              : 'Create Campground'
+          <Button 
+            type="submit" 
+            disabled={
+              isSubmitting || 
+              !form.watch('title') || 
+              !form.watch('description') || 
+              !form.watch('price') || 
+              !form.watch('location')
             }
+          >
+            {isSubmitting
+              ? geocodingStatus
+                ? 'Geocoding & Creating...'
+                : 'Creating...'
+              : 'Create Campground'}
           </Button>
         </div>
       </form>

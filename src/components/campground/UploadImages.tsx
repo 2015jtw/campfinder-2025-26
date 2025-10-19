@@ -1,228 +1,396 @@
 'use client'
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
-
-export interface UploadedImage {
+export type UploadedImage = {
   url: string
   path: string
 }
 
-interface UploadImagesProps {
-  images: UploadedImage[]
-  onChange: (images: UploadedImage[]) => void
-  maxImages?: number
+type UploadItem = {
+  file: File
+  preview: string
+  progress: number // 0..100
+  status: 'queued' | 'uploading' | 'done' | 'error'
+  error?: string
+  path?: string // storage path
+  url?: string // public URL
 }
 
-export default function UploadImages({ images, onChange, maxImages = 10 }: UploadImagesProps) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const supabase = createClient()
-  const bucket = 'campground-images'
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+const MAX_SIZE_MB = 8
+const MAX_FILES = 12
 
-  useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setIsAuthenticated(!!session)
-    }
-    checkAuth()
+export default function UploadImages({
+  campgroundId,
+  images = [],
+  onChange,
+  onComplete,
+  onFilesChange,
+  autoRecord = true, // hit /api/images/record after upload
+  maxImages = MAX_FILES,
+}: {
+  campgroundId?: string
+  images?: UploadedImage[]
+  onChange?: (images: UploadedImage[]) => void
+  onComplete?: (items: UploadItem[]) => void
+  onFilesChange?: (files: File[]) => void
+  autoRecord?: boolean
+  maxImages?: number
+}) {
+  const [items, setItems] = useState<UploadItem[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return
-
-    // Check authentication first
-    if (!isAuthenticated) {
-      setError('You must be logged in to upload images')
-      return
-    }
-
-    // Check if adding these files would exceed the limit
-    if (images.length + files.length > maxImages) {
-      setError(`You can only upload up to ${maxImages} images`)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    const uploads: UploadedImage[] = []
-
-    for (const file of Array.from(files)) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        console.warn(`Skipping non-image file: ${file.name}`)
-        continue
+  // Helper to emit files only when user adds/removes files (not on progress updates)
+  const emitFiles = useCallback(
+    (list: UploadItem[]) => {
+      if (onFilesChange) {
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          onFilesChange(list.filter((i) => i.status !== 'error').map((i) => i.file))
+        }, 0)
       }
+    },
+    [onFilesChange]
+  )
 
-      // Validate file size (e.g., 5MB limit)
-      const maxSize = 5 * 1024 * 1024 // 5MB
-      if (file.size > maxSize) {
-        setError(`File ${file.name} is too large. Maximum size is 5MB.`)
-        continue
-      }
+  const remainingSlots = useMemo(
+    () => Math.max(0, maxImages - images.length - items.length),
+    [maxImages, images.length, items.length]
+  )
 
-      let ext = file.name.split('.').pop()?.toLowerCase()
-      // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
-      if (!ext || ext === file.name.toLowerCase()) {
-        // Map common image MIME types to extensions
-        const mimeToExt: Record<string, string> = {
-          'image/jpeg': 'jpg',
-          'image/png': 'png',
-          'image/gif': 'gif',
-          'image/webp': 'webp',
-          'image/bmp': 'bmp',
-          'image/svg+xml': 'svg',
-        }
-        ext = mimeToExt[file.type] || 'jpg'
-      }
-      const path = `${crypto.randomUUID()}.${ext}`
-
-      // Ensure we have a valid session before uploading
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        setError('Authentication required for file upload')
-        continue
-      }
-
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
-        cacheControl: '3600',
-        upsert: false,
-      })
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        setError(`Failed to upload ${file.name}`)
-        continue
-      }
-
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-      uploads.push({ url: data.publicUrl, path })
-    }
-
-    if (uploads.length > 0) {
-      const next = [...images, ...uploads]
-      onChange(next)
-    }
-
-    setLoading(false)
+  const validate = (f: File): string | null => {
+    if (!ACCEPTED.includes(f.type)) return 'Unsupported file type'
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) return `File too large (> ${MAX_SIZE_MB} MB)`
+    return null
   }
 
-  async function remove(path: string) {
-    // Remove from Supabase storage
-    const { error } = await supabase.storage.from(bucket).remove([path])
-    if (error) {
-      console.error('Error removing file:', error)
-      setError('Failed to remove image')
-      return
-    }
+  const startUploadsForNewItems = useCallback(
+    async (newItems: UploadItem[]) => {
+      if (!campgroundId || campgroundId === 'new') {
+        console.log('Skipping upload for new campground - will upload after campground is created')
+        // For new campgrounds, just keep items in "queued" state for now
+        // They'll be uploaded after the campground is created
+        return
+      }
 
-    // Remove from local state
-    const next = images.filter((i) => i.path !== path)
-    onChange(next)
+      // Process each new item for upload
+      for (let i = 0; i < newItems.length; i++) {
+        const newItem = newItems[i]
+        if (newItem.error) continue
+
+        // Find the index of this item in the current items array and upload
+        setTimeout(() => {
+          setItems((currentItems) => {
+            const itemIndex = currentItems.findIndex(
+              (item) => item.file === newItem.file && item.status === 'queued'
+            )
+            if (itemIndex >= 0) {
+              uploadSingleItem(itemIndex)
+            }
+            return currentItems
+          })
+        }, i * 100) // Stagger uploads slightly
+      }
+    },
+    [campgroundId]
+  )
+
+  const addFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files) return
+      const toAdd: UploadItem[] = []
+      const limit = Math.min(files.length, remainingSlots)
+      for (let i = 0; i < limit; i++) {
+        const file = files[i]
+        const err = validate(file)
+        toAdd.push({
+          file,
+          preview: URL.createObjectURL(file),
+          progress: 0,
+          status: err ? 'error' : 'queued',
+          error: err ?? undefined,
+        })
+      }
+      setItems((prev) => {
+        const next = [...prev, ...toAdd]
+        emitFiles(next) // <-- emit here only
+        // Automatically start upload for newly added valid files
+        setTimeout(() => startUploadsForNewItems(toAdd.filter((item) => !item.error)), 100)
+        return next
+      })
+    },
+    [remainingSlots, startUploadsForNewItems]
+  )
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragOver(false)
+      addFiles(e.dataTransfer.files)
+    },
+    [addFiles]
+  )
+
+  const chooseFiles = () => inputRef.current?.click()
+
+  const signUrl = async (originalName: string) => {
+    if (!campgroundId) {
+      throw new Error('Campground ID is required for file upload')
+    }
+    const res = await fetch('/api/images/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campgroundId, originalName }),
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json() as Promise<{ signedUrl: string; path: string; fullUrl: string }>
+  }
+
+  // PUT with progress (XHR so we get progress events reliably)
+  const uploadToSignedUrl = (signedUrl: string, file: File, onProgress: (pct: number) => void) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', signedUrl)
+      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable) onProgress(Math.round((evt.loaded / evt.total) * 100))
+      }
+      xhr.onload = () =>
+        xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new Error(`Upload failed (${xhr.status})`))
+      xhr.onerror = () => reject(new Error('Network error during upload'))
+      xhr.send(file)
+    })
+
+  const recordImage = async (path: string, alt?: string) => {
+    if (!autoRecord || !campgroundId) return
+    await fetch('/api/images/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campgroundId, path, alt }),
+    })
+  }
+
+  const uploadSingleItem = useCallback(
+    async (itemIndex: number) => {
+      if (!campgroundId) {
+        console.error('Cannot upload: campgroundId is required')
+        return
+      }
+
+      // Get current item
+      const currentItems = items
+      const currentItem = currentItems[itemIndex]
+      if (!currentItem || currentItem.status !== 'queued' || currentItem.error) return
+
+      // Mark as uploading
+      setItems((prev) => {
+        const next = [...prev]
+        if (next[itemIndex]) {
+          next[itemIndex].status = 'uploading'
+        }
+        return next
+      })
+
+      try {
+        const { signedUrl, path, fullUrl } = await signUrl(currentItem.file.name)
+
+        await uploadToSignedUrl(signedUrl, currentItem.file, (pct) => {
+          setItems((prev) => {
+            const next = [...prev]
+            if (next[itemIndex]) {
+              next[itemIndex].progress = pct
+            }
+            return next
+          })
+        })
+
+        setItems((prev) => {
+          const next = [...prev]
+          if (next[itemIndex]) {
+            next[itemIndex].status = 'done'
+            next[itemIndex].path = path
+            next[itemIndex].url = fullUrl
+            next[itemIndex].progress = 100
+          }
+          return next
+        })
+
+        await recordImage(path, currentItem.file.name)
+
+        // Update parent component with new image
+        if (onChange) {
+          const newImage: UploadedImage = { url: fullUrl, path }
+          onChange([...images, newImage])
+        }
+
+        // Call onComplete for this single item
+        const completedItem: UploadItem = {
+          ...currentItem,
+          status: 'done',
+          path,
+          url: fullUrl,
+          progress: 100,
+        }
+        onComplete?.([completedItem])
+
+        // Remove completed item from local state after a short delay
+        setTimeout(() => {
+          setItems((prev) => prev.filter((_, idx) => idx !== itemIndex))
+        }, 1500)
+      } catch (e: any) {
+        setItems((prev) => {
+          const next = [...prev]
+          if (next[itemIndex]) {
+            next[itemIndex].status = 'error'
+            next[itemIndex].error = e?.message || 'Upload failed'
+          }
+          return next
+        })
+      }
+    },
+    [campgroundId, images, onChange, onComplete]
+  )
+
+  const removeItem = (i: number) => {
+    setItems((prev) => {
+      const next = [...prev]
+      const [removed] = next.splice(i, 1)
+      if (removed?.preview) URL.revokeObjectURL(removed.preview)
+      emitFiles(next) // <-- and emit here
+      return next
+    })
+  }
+
+  const removeExistingImage = (path: string) => {
+    if (onChange) {
+      const updatedImages = images.filter((img) => img.path !== path)
+      onChange(updatedImages)
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Upload Images ({images.length}/{maxImages})
-        </label>
+    <div className="space-y-3">
+      {/* Drop zone */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={[
+          'w-full rounded-2xl border-2 border-dashed p-6 cursor-pointer transition',
+          dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 hover:border-gray-400',
+          remainingSlots === 0 ? 'opacity-50 cursor-not-allowed' : '',
+        ].join(' ')}
+        onClick={remainingSlots > 0 ? chooseFiles : undefined}
+        aria-label="Upload images"
+      >
+        <div className="text-center">
+          <div className="font-medium">
+            {remainingSlots > 0 ? 'Drag & drop images here' : 'Maximum images reached'}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {remainingSlots > 0
+              ? `or click to choose (JPEG, PNG, WebP, AVIF • up to ${MAX_SIZE_MB}MB • max ${maxImages} files)`
+              : `${images.length + items.length}/${maxImages} images selected`}
+          </div>
+        </div>
         <input
+          ref={inputRef}
           type="file"
           multiple
-          accept="image/*"
-          onChange={(e) => handleFiles(e.target.files)}
-          disabled={loading || images.length >= maxImages || !isAuthenticated}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+          accept={ACCEPTED.join(',')}
+          className="hidden"
+          onChange={(e) => addFiles(e.target.files)}
+          disabled={remainingSlots === 0}
         />
-        {images.length >= maxImages && (
-          <p className="text-sm text-amber-600 mt-1">Maximum number of images reached</p>
-        )}
-        {!isAuthenticated && (
-          <p className="text-sm text-red-600 mt-1">Please log in to upload images</p>
-        )}
       </div>
 
-      {loading && (
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-gray-600">Uploading images...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-sm text-red-600">{error}</p>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="text-xs text-red-500 hover:text-red-700 mt-1"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
+      {/* Existing images grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {images.map((img, index) => (
-            <div key={img.path} className="relative group">
-              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                <Image
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Images</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {images.map((img, i) => (
+              <div key={`existing-${i}`} className="relative overflow-hidden rounded-xl border">
+                <img
                   src={img.url}
-                  alt={`Upload ${index + 1}`}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  alt={`Current image ${i + 1}`}
+                  loading="lazy"
+                  className="h-32 w-full object-cover"
                 />
+                <div className="absolute left-0 right-0 bottom-0">
+                  <div className="text-[10px] bg-green-600 text-white px-2 py-1">Current</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(img.path)}
+                  className="absolute top-1 right-1 rounded-full bg-white/90 hover:bg-white px-2 py-1 text-xs shadow"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => remove(img.path)}
-                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                title="Remove image"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {images.length === 0 && (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            stroke="currentColor"
-            fill="none"
-            viewBox="0 0 48 48"
-          >
-            <path
-              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <p className="mt-2 text-sm text-gray-600">Click the upload button above to add images</p>
+      {/* New upload items grid */}
+      {items.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">New Uploads</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {items.map((it, i) => (
+              <div key={i} className="relative overflow-hidden rounded-xl border">
+                {/* Preview (lazy) */}
+                <img
+                  src={it.preview}
+                  alt={it.file.name}
+                  loading="lazy"
+                  className="h-32 w-full object-cover"
+                />
+                {/* Status / progress */}
+                <div className="absolute left-0 right-0 bottom-0">
+                  {it.status === 'uploading' && (
+                    <div className="h-1 bg-gray-200">
+                      <div
+                        className="h-1 bg-emerald-500 transition-all"
+                        style={{ width: `${it.progress}%` }}
+                      />
+                    </div>
+                  )}
+                  {it.status === 'error' && (
+                    <div className="text-xs bg-red-50 text-red-600 px-2 py-1">{it.error}</div>
+                  )}
+                  {it.status === 'done' && (
+                    <div className="text-[10px] bg-emerald-600 text-white px-2 py-1">Uploaded</div>
+                  )}
+                  {it.status === 'queued' && (
+                    <div className="text-[10px] bg-blue-600 text-white px-2 py-1">Ready</div>
+                  )}
+                </div>
+                {/* Remove */}
+                {it.status !== 'uploading' && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(i)}
+                    className="absolute top-1 right-1 rounded-full bg-white/90 hover:bg-white px-2 py-1 text-xs shadow"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {remainingSlots > 0 && (
+        <div className="text-sm text-gray-500 text-center">{remainingSlots} slots remaining</div>
       )}
     </div>
   )

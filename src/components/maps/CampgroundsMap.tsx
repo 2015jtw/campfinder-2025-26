@@ -4,6 +4,9 @@ import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import Link from 'next/link'
 
+const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // continental US centroid
+const DEFAULT_ZOOM = 3 // good "country/region" view
+
 type Campground = {
   id: number
   slug: string
@@ -188,7 +191,7 @@ function createPopupContent(campground: Campground): HTMLElement {
   return container
 }
 
-export default function MainMap({
+export default function CampgroundsMap({
   latitude,
   longitude,
   zoom = 11,
@@ -208,12 +211,17 @@ export default function MainMap({
     if (!token || !containerRef.current || mapRef.current) return
     mapboxgl.accessToken = token
 
+    // Always use North American defaults - ignore props for center/zoom
+    const lat = DEFAULT_CENTER.lat
+    const lng = DEFAULT_CENTER.lng
+    const z = DEFAULT_ZOOM
+
     // Initialize map
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: styleUrl,
-      center: [longitude, latitude],
-      zoom,
+      center: [lng, lat], // NOTE: [lng, lat] order for Mapbox
+      zoom: z,
     })
     mapRef.current = map
 
@@ -223,9 +231,7 @@ export default function MainMap({
 
     // Optional center marker
     if (showMarker) {
-      markerRef.current = new mapboxgl.Marker({ color: '#e11d48' })
-        .setLngLat([longitude, latitude])
-        .addTo(map)
+      markerRef.current = new mapboxgl.Marker({ color: '#e11d48' }).setLngLat([lng, lat]).addTo(map)
     }
 
     // Add CSS for better popup styling
@@ -299,22 +305,25 @@ export default function MainMap({
     }
   }, []) // init once
 
-  // Respond to prop changes (center / zoom / marker)
+  // Handle marker changes only (no center/zoom changes)
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    map.easeTo({ center: [longitude, latitude], zoom, duration: 500 })
+
+    // Always use North American defaults for marker positioning too
+    const lat = DEFAULT_CENTER.lat
+    const lng = DEFAULT_CENTER.lng
 
     if (showMarker) {
       if (!markerRef.current) {
         markerRef.current = new mapboxgl.Marker({ color: '#e11d48' }).addTo(map)
       }
-      markerRef.current.setLngLat([longitude, latitude])
+      markerRef.current.setLngLat([lng, lat])
     } else {
       markerRef.current?.remove()
       markerRef.current = null
     }
-  }, [latitude, longitude, zoom, showMarker])
+  }, [showMarker])
 
   // Handle campground markers separately to respond to campgrounds prop changes
   useEffect(() => {
@@ -330,7 +339,7 @@ export default function MainMap({
     campgrounds.forEach((campground, index) => {
       console.log(
         `Adding marker ${index + 1}:`,
-        campground.title,
+        campground.location,
         'at',
         campground.latitude,
         campground.longitude
@@ -373,31 +382,13 @@ export default function MainMap({
     })
 
     console.log('Added', campgroundMarkersRef.current.length, 'markers to map')
-
-    // Fit map to show all campgrounds if we have any
-    if (campgrounds.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds()
-      campgrounds.forEach((c) => {
-        if (typeof c.latitude === 'number' && typeof c.longitude === 'number') {
-          bounds.extend([c.longitude, c.latitude])
-        }
-      })
-
-      // Only fit bounds if we have valid bounds
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 10, // Don't zoom in too much
-        })
-      }
-    }
   }, [campgrounds])
 
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height, borderRadius: 16, overflow: 'hidden' }}
-      className="border shadow-lg"
+      style={{ height, width: '100%' }}
+      className="rounded-2xl overflow-hidden border shadow-lg"
       aria-label="Map"
     />
   )
