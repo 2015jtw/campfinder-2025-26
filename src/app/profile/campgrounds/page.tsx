@@ -99,10 +99,46 @@ export default async function CampgroundsPage() {
             {campgrounds.map((cg: CampgroundRow) => (
               <Link key={cg.id} href={`/campgrounds/${cg.slug}`} className="group">
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-                  {cg.images[0]?.url ? (
+                  {(() => {
+                    const raw = cg.images[0]?.url
+                    let img = raw
+                    if (typeof raw === 'string') {
+                      const s = raw.trim()
+                      if (s.startsWith('[') && s.endsWith(']')) {
+                        try {
+                          const parsed = JSON.parse(s)
+                          if (
+                            Array.isArray(parsed) &&
+                            parsed.length > 0 &&
+                            typeof parsed[0] === 'string'
+                          ) {
+                            img = parsed[0]
+                          }
+                        } catch {}
+                      }
+                    }
+                    return img
+                  })() ? (
                     <div className="relative h-48 w-full bg-gray-100">
                       <Image
-                        src={cg.images[0].url}
+                        src={(() => {
+                          const raw = cg.images[0]?.url
+                          if (!raw) return ''
+                          const s = raw.trim()
+                          if (s.startsWith('[') && s.endsWith(']')) {
+                            try {
+                              const parsed = JSON.parse(s)
+                              if (
+                                Array.isArray(parsed) &&
+                                parsed.length > 0 &&
+                                typeof parsed[0] === 'string'
+                              ) {
+                                return parsed[0]
+                              }
+                            } catch {}
+                          }
+                          return raw
+                        })()}
                         alt={cg.title}
                         fill
                         className="object-cover transition-transform group-hover:scale-105"

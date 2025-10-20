@@ -43,7 +43,7 @@ export default function MapPinSelector({
     // Determine initial center and zoom
     const initialLat = latitude ?? 39.8283 // Default to US center
     const initialLng = longitude ?? -98.5795
-    const initialZoom = latitude && longitude ? 12 : 3
+    const initialZoom = latitude != null && longitude != null ? 12 : 3
 
     try {
       const map = new mapboxgl.Map({
@@ -62,7 +62,7 @@ export default function MapPinSelector({
         setIsLoaded(true)
 
         // Place initial marker if coordinates exist
-        if (latitude && longitude) {
+        if (latitude != null && longitude != null) {
           placeMarker(latitude, longitude)
         }
       })
@@ -90,7 +90,7 @@ export default function MapPinSelector({
   useEffect(() => {
     if (!isLoaded || !mapRef.current) return
 
-    if (latitude && longitude) {
+    if (latitude != null && longitude != null) {
       placeMarker(latitude, longitude)
       mapRef.current.flyTo({
         center: [longitude, latitude],
@@ -203,7 +203,7 @@ export default function MapPinSelector({
               {isLocating ? 'Locating...' : 'My Location'}
             </button>
 
-            {latitude && longitude && onClear && (
+            {latitude != null && longitude != null && onClear && (
               <button
                 type="button"
                 onClick={handleClearMarker}
@@ -218,7 +218,7 @@ export default function MapPinSelector({
         </div>
 
         {/* Coordinates display */}
-        {latitude && longitude && (
+        {latitude != null && longitude != null && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-600" />

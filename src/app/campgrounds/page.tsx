@@ -8,7 +8,6 @@ import ViewToggle from '@/components/util/ViewToggle'
 import FilterSelect, { SortOption } from '@/components/util/FilterSelect'
 import Pagination from '@/components/util/Pagination'
 import CampgroundCard from '@/components/campground/CampgroundCard'
-import MainMap from '@/components/maps/CampgroundsMap'
 import { CampgroundsSearchParams } from '@/types'
 import CampgroundsMap from '@/components/maps/CampgroundsMap'
 

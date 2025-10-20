@@ -26,7 +26,9 @@ type CreateReviewActionResult = { ok: true; id: number } | { ok: false; error: s
 type DeleteReviewActionResult = { ok: true } | { ok: false; error: string }
 
 // Geocoding helper function
-async function geocodeLocation(location: string): Promise<{ latitude: number; longitude: number } | null> {
+async function geocodeLocation(
+  location: string
+): Promise<{ latitude: number; longitude: number } | null> {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   if (!token) {
     console.warn('Missing NEXT_PUBLIC_MAPBOX_TOKEN for geocoding')
@@ -36,7 +38,7 @@ async function geocodeLocation(location: string): Promise<{ latitude: number; lo
   try {
     const query = encodeURIComponent(location)
     const url = `https://api.mapbox.com/search/geocode/v6/forward?q=${query}&access_token=${token}&limit=1`
-    
+
     const res = await fetch(url)
     if (!res.ok) {
       console.error('Geocoding failed:', res.status)
@@ -70,38 +72,19 @@ export async function createCampgroundAction(
     redirect('/login')
   }
 
-  // Handle file uploads if present
-  const imageCount = parseInt(String(formData.get('imageCount') ?? '0'))
-  const uploadedImages: { url: string }[] = []
-  
-  if (imageCount > 0) {
-    // Upload files to Supabase storage
-    for (let i = 0; i < imageCount; i++) {
-      const file = formData.get(`imageFile_${i}`) as File
-      if (file && file.size > 0) {
-        try {
-          // Generate unique filename
-          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-          const filename = `${crypto.randomUUID()}.${ext}`
-          const path = `temp/${filename}` // Temporary path until we have campground ID
-          
-          const { error: uploadError } = await supabase.storage
-            .from('campground-images')
-            .upload(path, file, {
-              cacheControl: '3600',
-              upsert: false,
-            })
-
-          if (!uploadError) {
-            const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
-            uploadedImages.push({ url: data.publicUrl })
-          }
-        } catch (error) {
-          console.error('Error uploading file:', error)
-        }
-      }
+  // Parse images JSON (array of { url }) coming from client
+  let uploadedImages: { url: string }[] = []
+  try {
+    const imagesJson = String(formData.get('images') ?? '[]')
+    const parsedImages = JSON.parse(imagesJson)
+    if (Array.isArray(parsedImages)) {
+      uploadedImages = parsedImages.filter((i) => i && typeof i.url === 'string')
     }
+  } catch (e) {
+    return { ok: false, errors: { images: ['Invalid image data'] } }
   }
+
+  // NOTE: Do not accept raw files via server actions to avoid body size limits (413).
 
   const raw = {
     title: String(formData.get('title') ?? ''),
@@ -113,12 +96,7 @@ export async function createCampgroundAction(
     images: uploadedImages,
   }
 
-  // Use a modified schema that allows empty images for new campgrounds
-  const CreateCampgroundSchemaWithOptionalImages = CreateCampgroundSchema.omit({ images: true }).extend({
-    images: z.array(z.object({ url: z.string().url() })).optional().default([])
-  })
-  
-  const parsed = CreateCampgroundSchemaWithOptionalImages.safeParse(raw)
+  const parsed = CreateCampgroundSchema.safeParse(raw)
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors
     return { ok: false, errors: fieldErrors }
@@ -244,7 +222,7 @@ export async function updateCampgroundAction(
   const useManualCoordinates = formData.get('useManualCoordinates') === 'true'
   const manualLat = formData.get('latitude')
   const manualLng = formData.get('longitude')
-  
+
   let latitude = cg.latitude
   let longitude = cg.longitude
 
