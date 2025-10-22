@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Review from '@/components/campground/Review'
+import Review from '@/components/reviews/Review'
 import { deleteReviewAction } from '@/app/campgrounds/actions'
 import { Star } from 'lucide-react'
 import Link from 'next/link'

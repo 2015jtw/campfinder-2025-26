@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Increase to accommodate client-side 8MB per file limit
+    },
+  },
   images: {
     remotePatterns: [
       {

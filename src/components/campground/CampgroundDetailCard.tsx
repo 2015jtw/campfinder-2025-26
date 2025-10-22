@@ -35,6 +35,59 @@ interface CampgroundDetailCardProps {
 export default function CampgroundDetailCard({ campground, isOwner }: CampgroundDetailCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
+  // Helper function to normalize URL (handle both string and JSON array)
+  const normalizeUrl = (url: string): string => {
+    // If it looks like a JSON array, parse it and get the first item
+    if (url.startsWith('[') && url.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(url)
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : url
+      } catch {
+        return url
+      }
+    }
+    return url
+  }
+
+  // Helper function to ensure proper Supabase URL
+  const getImageUrl = (url: string): string => {
+    const normalizedUrl = normalizeUrl(url)
+
+    // If it's already a full URL, return as is
+    if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+      return normalizedUrl
+    }
+
+    // If it's just a filename, construct the Supabase public URL
+    // Format: https://[supabase-project-id].supabase.co/storage/v1/object/public/campground-images/[filename]
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (supabaseUrl) {
+      return `${supabaseUrl}/storage/v1/object/public/campground-images/${normalizedUrl}`
+    }
+
+    return normalizedUrl
+  }
+
+  // Helper function to validate URL
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const fullUrl = getImageUrl(url)
+      new URL(fullUrl)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // Filter out invalid URLs and construct proper URLs
+  const validImages = campground.images
+    .filter((img) => img.url && isValidUrl(img.url))
+    .map((img) => ({
+      ...img,
+      url: getImageUrl(img.url),
+    }))
+  const currentImage = validImages[currentImageIndex] || null
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -51,20 +104,20 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
   }
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev === campground.images.length - 1 ? 0 : prev + 1))
+    setCurrentImageIndex((prev) => (prev === validImages.length - 1 ? 0 : prev + 1))
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? campground.images.length - 1 : prev - 1))
+    setCurrentImageIndex((prev) => (prev === 0 ? validImages.length - 1 : prev - 1))
   }
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Image Carousel */}
-      {campground.images.length > 0 && (
+      {validImages.length > 0 && currentImage && (
         <div className="relative h-96 bg-gray-100">
           <Image
-            src={campground.images[currentImageIndex].url}
+            src={currentImage.url}
             alt={campground.title}
             fill
             className="object-cover"
@@ -72,7 +125,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
           />
 
           {/* Carousel Controls */}
-          {campground.images.length > 1 && (
+          {validImages.length > 1 && (
             <>
               <button
                 onClick={prevImage}

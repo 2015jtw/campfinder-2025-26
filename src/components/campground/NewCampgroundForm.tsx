@@ -3,11 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { CreateCampgroundSchema, type CreateCampgroundInput } from '@/lib/validations/campground'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
+import MapPinSelector from '@/components/maps/MapPinSelector'
 import { createCampgroundAction } from '@/app/campgrounds/actions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 // shadcn/ui
 import { Button } from '@/components/ui/button'
@@ -20,14 +22,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form'
 
 export default function NewCampgroundForm() {
   const router = useRouter()
+  const supabase = createClient()
   const [images, setImages] = useState<UploadedImage[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null)
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   const form = useForm<CreateCampgroundInput>({
     resolver: zodResolver(CreateCampgroundSchema),
@@ -45,6 +50,8 @@ export default function NewCampgroundForm() {
   useEffect(() => {
     setIsHydrated(true)
   }, [])
+
+  // Upload already handled inside UploadImages for new campgrounds
 
   // Show loading skeleton during hydration
   if (!isHydrated) {
@@ -84,47 +91,67 @@ export default function NewCampgroundForm() {
       <form
         className="space-y-6"
         suppressHydrationWarning
-        action={async (formData: FormData) => {
+        onSubmit={async (e) => {
+          e.preventDefault()
           setIsSubmitting(true)
-          setGeocodingStatus('🗺️ Geocoding location...')
 
-          // Add form values to FormData since we're using controlled inputs
-          const formValues = form.getValues()
-          formData.set('title', formValues.title)
-          formData.set('description', formValues.description)
-          formData.set('price', formValues.price)
-          formData.set('location', formValues.location)
-          formData.set('images', JSON.stringify(images))
+          try {
+            const formValues = form.getValues()
 
-          const res = await createCampgroundAction(formData)
-          setGeocodingStatus(null)
-
-          if (res.ok) {
-            toast.success('Campground created successfully!')
-            router.push(`/campgrounds/${res.slug}`)
-          } else {
-            // Handle validation errors
-            if (res.errors) {
-              Object.entries(res.errors).forEach(([key, value]) => {
-                if (key === '_form') {
-                  // Global form error
-                  form.setError('root', {
-                    type: 'server',
-                    message: typeof value === 'string' ? value : 'An error occurred',
-                  })
-                } else {
-                  // Field-specific errors
-                  form.setError(key as keyof CreateCampgroundInput, {
-                    type: 'server',
-                    message: Array.isArray(value) ? value[0] : String(value),
-                  })
-                }
-              })
+            if (images.length === 0) {
+              toast.error('Please upload at least one image')
+              setIsSubmitting(false)
+              return
             }
-            toast.error('Failed to create campground. Please check the form and try again.')
-          }
 
-          setIsSubmitting(false)
+            const formData = new FormData()
+            formData.set('title', formValues.title)
+            formData.set('description', formValues.description)
+            formData.set('price', formValues.price)
+            formData.set('location', formValues.location)
+            formData.set('images', JSON.stringify(images.map((img) => ({ url: img.url }))))
+
+            // Do NOT append raw files to server action to avoid body size limits.
+            // Images are already uploaded client-side; we only send their public URLs.
+
+            if (coordinates) {
+              formData.set('latitude', coordinates.lat.toString())
+              formData.set('longitude', coordinates.lng.toString())
+              formData.set('useManualCoordinates', 'true')
+            } else {
+              setGeocodingStatus('🗺️ Geocoding location...')
+            }
+
+            const res = await createCampgroundAction(formData)
+            setGeocodingStatus(null)
+
+            if (res.ok) {
+              toast.success('Campground created successfully!')
+              router.push(`/campgrounds/${res.slug}`)
+            } else {
+              if (res.errors) {
+                Object.entries(res.errors).forEach(([key, value]) => {
+                  if (key === '_form') {
+                    form.setError('root', {
+                      type: 'server',
+                      message: typeof value === 'string' ? value : 'An error occurred',
+                    })
+                  } else {
+                    form.setError(key as keyof CreateCampgroundInput, {
+                      type: 'server',
+                      message: Array.isArray(value) ? value[0] : String(value),
+                    })
+                  }
+                })
+              }
+              toast.error('Failed to create campground. Please check the form and try again.')
+            }
+          } catch (error) {
+            console.error('Submission error:', error)
+            toast.error('An unexpected error occurred')
+          } finally {
+            setIsSubmitting(false)
+          }
         }}
       >
         {/* Title */}
@@ -154,9 +181,7 @@ export default function NewCampgroundForm() {
                   <Input placeholder="Arlington, Virginia" {...field} />
                 </FormControl>
                 <FormMessage />
-                {geocodingStatus && (
-                  <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>
-                )}
+                {geocodingStatus && <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>}
               </FormItem>
             )}
           />
@@ -181,15 +206,48 @@ export default function NewCampgroundForm() {
           />
         </div>
 
+        {/* Map Pin Selector */}
+        <FormItem>
+          <FormLabel>Pin Location on Map (Optional)</FormLabel>
+          <MapPinSelector
+            latitude={coordinates?.lat}
+            longitude={coordinates?.lng}
+            onCoordinatesChange={(lat, lng) => setCoordinates({ lat, lng })}
+            onClear={() => setCoordinates(null)}
+            height={400}
+          />
+          <FormDescription>
+            Drop a pin on the map for precise coordinates, or leave empty to geocode the location
+            automatically
+          </FormDescription>
+        </FormItem>
+
         {/* Images */}
         <FormItem>
           <FormLabel>Images</FormLabel>
           <UploadImages
+            campgroundId="new" // upload directly to temp storage
             images={images}
             onChange={(imgs) => {
-              setImages(imgs)
-              form.setValue('images', imgs.map(img => ({ url: img.url })), { shouldValidate: true })
+              // Dedupe by path or URL to avoid accidental duplicates
+              const seen = new Set<string>()
+              const deduped = [] as UploadedImage[]
+              for (const im of imgs) {
+                const key = `${im.path}|${im.url}`
+                if (!seen.has(key)) {
+                  seen.add(key)
+                  deduped.push(im)
+                }
+              }
+              setImages(deduped)
+              form.setValue(
+                'images',
+                deduped.map((img) => ({ url: img.url })),
+                { shouldValidate: true }
+              )
             }}
+            autoRecord={false} // do not record until campground is created
+            maxImages={10}
           />
           {form.formState.errors.images && (
             <FormMessage>{form.formState.errors.images.message}</FormMessage>
@@ -204,7 +262,7 @@ export default function NewCampgroundForm() {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea rows={6} placeholder="Tell campers about this spot…" {...field} />
+                <Textarea rows={10} placeholder="Tell campers about this spot…" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -219,11 +277,22 @@ export default function NewCampgroundForm() {
         )}
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
-            {isSubmitting 
-              ? (geocodingStatus ? 'Geocoding & Creating...' : 'Creating...') 
-              : 'Create Campground'
+          <Button
+            type="submit"
+            disabled={
+              isSubmitting ||
+              !form.watch('title') ||
+              !form.watch('description') ||
+              !form.watch('price') ||
+              !form.watch('location') ||
+              images.length === 0
             }
+          >
+            {isSubmitting
+              ? geocodingStatus
+                ? 'Geocoding & Creating...'
+                : 'Creating...'
+              : 'Create Campground'}
           </Button>
         </div>
       </form>

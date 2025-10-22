@@ -21,6 +21,20 @@ function money(price: number | null) {
   return `$${price.toFixed(0)}`
 }
 
+function normalizeUrl(possiblyArrayString: string | undefined): string | undefined {
+  if (!possiblyArrayString) return undefined
+  const s = possiblyArrayString.trim()
+  if (s.startsWith('[') && s.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(s)
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+        return parsed[0]
+      }
+    } catch {}
+  }
+  return possiblyArrayString
+}
+
 export default function CampgroundCard({
   data,
   layout = 'grid',
@@ -28,7 +42,7 @@ export default function CampgroundCard({
   data: CampgroundCardData
   layout?: 'grid' | 'list'
 }) {
-  const imageUrl = data.images[0]?.url
+  const imageUrl = normalizeUrl(data.images[0]?.url)
   const rating = data._avgRating
   const reviewCount = data._reviewsCount
 

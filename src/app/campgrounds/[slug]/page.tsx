@@ -2,9 +2,9 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import CampgroundDetailCard from '@/components/campground/CampgroundDetailCard'
-import MapSection from '@/components/campground/CampgroundDetailMap'
-import ReviewsSection from '@/components/campground/ReviewsSection'
-import CampgroundDetailMap from '@/components/campground/CampgroundDetailMap'
+import MapSection from '@/components/maps/CampgroundDetailMap'
+import ReviewsSection from '@/components/reviews/ReviewsSection'
+import CampgroundDetailMap from '@/components/maps/CampgroundDetailMap'
 
 interface CampgroundDetailPageProps {
   params: Promise<{ slug: string }>

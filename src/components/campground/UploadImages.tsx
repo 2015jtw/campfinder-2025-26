@@ -1,228 +1,417 @@
 'use client'
-
-import { useState, useEffect } from 'react'
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
+import type { DragEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
 
-export interface UploadedImage {
+export type UploadedImage = {
   url: string
   path: string
 }
 
-interface UploadImagesProps {
-  images: UploadedImage[]
-  onChange: (images: UploadedImage[]) => void
-  maxImages?: number
+// Helper function to dedupe by path
+function dedupeByPath(arr: UploadedImage[]) {
+  const seen = new Set<string>()
+  return arr.filter((x) => (seen.has(x.path) ? false : (seen.add(x.path), true)))
 }
 
-export default function UploadImages({ images, onChange, maxImages = 10 }: UploadImagesProps) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const supabase = createClient()
-  const bucket = 'campground-images'
+// Handle multiple file uploads concurrently
+async function handleChosenFiles(
+  files: FileList | File[],
+  images: UploadedImage[],
+  onImagesChange: (next: UploadedImage[]) => void,
+  supabase: ReturnType<typeof createClient>,
+  max: number,
+  campgroundId?: string
+) {
+  // respect remaining slots
+  const remaining = Math.max(0, max - images.length)
+  const fileArr = Array.from(files).slice(0, remaining)
 
-  useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setIsAuthenticated(!!session)
-    }
-    checkAuth()
+  if (!fileArr.length) return
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session)
-    })
+  // Upload all concurrently
+  const results = await Promise.allSettled(
+    fileArr.map(async (file) => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const path =
+        campgroundId === 'new'
+          ? `temp/${crypto.randomUUID()}.${ext}`
+          : `campgrounds/${campgroundId}/${crypto.randomUUID()}.${ext}`
 
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return
-
-    // Check authentication first
-    if (!isAuthenticated) {
-      setError('You must be logged in to upload images')
-      return
-    }
-
-    // Check if adding these files would exceed the limit
-    if (images.length + files.length > maxImages) {
-      setError(`You can only upload up to ${maxImages} images`)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    const uploads: UploadedImage[] = []
-
-    for (const file of Array.from(files)) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        console.warn(`Skipping non-image file: ${file.name}`)
-        continue
-      }
-
-      // Validate file size (e.g., 5MB limit)
-      const maxSize = 5 * 1024 * 1024 // 5MB
-      if (file.size > maxSize) {
-        setError(`File ${file.name} is too large. Maximum size is 5MB.`)
-        continue
-      }
-
-      let ext = file.name.split('.').pop()?.toLowerCase()
-      // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
-      if (!ext || ext === file.name.toLowerCase()) {
-        // Map common image MIME types to extensions
-        const mimeToExt: Record<string, string> = {
-          'image/jpeg': 'jpg',
-          'image/png': 'png',
-          'image/gif': 'gif',
-          'image/webp': 'webp',
-          'image/bmp': 'bmp',
-          'image/svg+xml': 'svg',
-        }
-        ext = mimeToExt[file.type] || 'jpg'
-      }
-      const path = `${crypto.randomUUID()}.${ext}`
-
-      // Ensure we have a valid session before uploading
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        setError('Authentication required for file upload')
-        continue
-      }
-
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
-        cacheControl: '3600',
+      const { error } = await supabase.storage.from('campground-images').upload(path, file, {
         upsert: false,
+        contentType: file.type || undefined,
       })
+      if (error) throw error
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        setError(`Failed to upload ${file.name}`)
-        continue
+      const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
+      return { url: data.publicUrl, path } satisfies UploadedImage
+    })
+  )
+
+  const successes = results
+    .filter((r): r is PromiseFulfilledResult<UploadedImage> => r.status === 'fulfilled')
+    .map((r) => r.value)
+
+  if (successes.length) {
+    onImagesChange(dedupeByPath([...images, ...successes]))
+  }
+}
+
+type UploadItem = {
+  file: File
+  preview: string
+  progress: number // 0..100
+  status: 'queued' | 'uploading' | 'done' | 'error'
+  error?: string
+  path?: string // storage path
+  url?: string // public URL
+}
+
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+const MAX_SIZE_MB = 8
+const MAX_FILES = 12
+
+export default function UploadImages({
+  campgroundId,
+  images = [],
+  onChange,
+  onComplete,
+  onFilesChange,
+  autoRecord = true, // hit /api/images/record after upload
+  maxImages = MAX_FILES,
+}: {
+  campgroundId?: string
+  images?: UploadedImage[]
+  onChange?: (images: UploadedImage[]) => void
+  onComplete?: (items: UploadItem[]) => void
+  onFilesChange?: (files: File[]) => void
+  autoRecord?: boolean
+  maxImages?: number
+}) {
+  const [items, setItems] = useState<UploadItem[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const supabase = useMemo(() => createClient(), [])
+  const imagesRef = useRef<UploadedImage[]>(images)
+  const uploadedSetRef = useRef<Set<string>>(new Set())
+  const queuedFilesRef = useRef<Set<string>>(new Set())
+  const startedUploadsRef = useRef<Set<string>>(new Set())
+
+  // Keep imagesRef in sync with images prop
+  useEffect(() => {
+    imagesRef.current = images
+    // Keep a set of known paths to avoid duplicates
+    const next = new Set<string>()
+    for (const im of images) {
+      if (im.path) next.add(im.path)
+    }
+    uploadedSetRef.current = next
+  }, [images])
+
+  // Helper to emit PENDING files (queued or uploading)
+  const emitFiles = useCallback(
+    (list: UploadItem[]) => {
+      if (onFilesChange) {
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          const pending = list.filter((i) => i.status === 'queued' || i.status === 'uploading')
+          onFilesChange(pending.map((i) => i.file))
+        }, 0)
       }
+    },
+    [onFilesChange]
+  )
 
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-      uploads.push({ url: data.publicUrl, path })
+  // Clean up any stuck items periodically
+  useEffect(() => {
+    const cleanup = () => {
+      setItems((prev) => {
+        const cleaned = prev.filter((item) => {
+          // Remove items that have been done for more than 1 second
+          if (item.status === 'done') {
+            return false
+          }
+          return true
+        })
+        if (cleaned.length !== prev.length) {
+          emitFiles(cleaned)
+        }
+        return cleaned
+      })
     }
 
-    if (uploads.length > 0) {
-      const next = [...images, ...uploads]
-      onChange(next)
-    }
+    const interval = setInterval(cleanup, 1000)
+    return () => clearInterval(interval)
+  }, [emitFiles])
 
-    setLoading(false)
+  const remainingSlots = useMemo(() => {
+    // Only count items that are actually pending (queued or uploading)
+    const pendingCount = items.filter(
+      (i) => i.status === 'queued' || i.status === 'uploading'
+    ).length
+    return Math.max(0, maxImages - images.length - pendingCount)
+  }, [maxImages, images.length, items])
+
+  const validate = (f: File): string | null => {
+    if (!ACCEPTED.includes(f.type)) return 'Unsupported file type'
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) return `File too large (> ${MAX_SIZE_MB} MB)`
+    return null
   }
 
-  async function remove(path: string) {
-    // Remove from Supabase storage
-    const { error } = await supabase.storage.from(bucket).remove([path])
-    if (error) {
-      console.error('Error removing file:', error)
-      setError('Failed to remove image')
-      return
-    }
+  const addFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files) return
 
-    // Remove from local state
-    const next = images.filter((i) => i.path !== path)
-    onChange(next)
+      // Validate files first
+      const validFiles: File[] = []
+      for (let i = 0; i < files.length && validFiles.length < remainingSlots; i++) {
+        const file = files[i]
+        const err = validate(file)
+        if (!err) {
+          validFiles.push(file)
+        }
+      }
+
+      if (validFiles.length > 0 && onChange) {
+        // Use the new concurrent upload approach
+        handleChosenFiles(validFiles, images, onChange, supabase, maxImages, campgroundId)
+      }
+    },
+    [remainingSlots, images, onChange, supabase, maxImages, campgroundId]
+  )
+
+  const onDrop = useCallback(
+    (e: DragEvent) => {
+      e.preventDefault()
+      setDragOver(false)
+      if (e.dataTransfer?.files && onChange) {
+        handleChosenFiles(e.dataTransfer.files, images, onChange, supabase, maxImages, campgroundId)
+      }
+    },
+    [images, onChange, supabase, maxImages, campgroundId]
+  )
+
+  const chooseFiles = () => inputRef.current?.click()
+
+  const signUrl = async (originalName: string) => {
+    if (!campgroundId) {
+      throw new Error('Campground ID is required for file upload')
+    }
+    const res = await fetch('/api/images/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campgroundId, originalName }),
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json() as Promise<{ signedUrl: string; path: string; fullUrl: string }>
+  }
+
+  // PUT with progress (XHR so we get progress events reliably)
+  const uploadToSignedUrl = (signedUrl: string, file: File, onProgress: (pct: number) => void) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', signedUrl)
+      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable) onProgress(Math.round((evt.loaded / evt.total) * 100))
+      }
+      xhr.onload = () =>
+        xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new Error(`Upload failed (${xhr.status})`))
+      xhr.onerror = () => reject(new Error('Network error during upload'))
+      xhr.send(file)
+    })
+
+  const recordImage = async (path: string, alt?: string) => {
+    if (!autoRecord || !campgroundId) return
+    await fetch('/api/images/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campgroundId, path, alt }),
+    })
+  }
+
+  const uploadSingleItem = useCallback(
+    async (itemIndex: number) => {
+      if (!campgroundId) {
+        console.error('Cannot upload: campgroundId is required')
+        return
+      }
+
+      // Get current item
+      const currentItems = items
+      const currentItem = currentItems[itemIndex]
+      if (!currentItem || currentItem.status !== 'queued' || currentItem.error) return
+
+      // Mark as uploading
+      setItems((prev) => {
+        const next = [...prev]
+        if (next[itemIndex]) {
+          next[itemIndex].status = 'uploading'
+        }
+        emitFiles(next)
+        return next
+      })
+
+      try {
+        const fileKey = `${currentItem.file.name}|${currentItem.file.size}|${currentItem.file.lastModified}`
+        if (startedUploadsRef.current.has(fileKey)) return
+        startedUploadsRef.current.add(fileKey)
+
+        const { signedUrl, path, fullUrl } = await signUrl(currentItem.file.name)
+
+        await uploadToSignedUrl(signedUrl, currentItem.file, (pct) => {
+          setItems((prev) => {
+            const next = [...prev]
+            if (next[itemIndex]) {
+              next[itemIndex].progress = pct
+            }
+            emitFiles(next)
+            return next
+          })
+        })
+
+        // Immediately remove completed item from local state to avoid UI confusion
+        setItems((prev) => {
+          const next = prev.filter((_, idx) => idx !== itemIndex)
+          emitFiles(next)
+          return next
+        })
+
+        await recordImage(path, currentItem.file.name)
+
+        // Update parent component with new image (strong dedupe by path)
+        if (onChange) {
+          const newImage: UploadedImage = { url: fullUrl, path }
+          if (uploadedSetRef.current.has(path)) {
+            // already processed
+          } else {
+            uploadedSetRef.current.add(path)
+            onChange([...images, newImage])
+          }
+        }
+
+        // Call onComplete for this single item
+        const completedItem: UploadItem = {
+          ...currentItem,
+          status: 'done',
+          path,
+          url: fullUrl,
+          progress: 100,
+        }
+        onComplete?.([completedItem])
+
+        // Item already removed above
+      } catch (e: any) {
+        setItems((prev) => {
+          const next = [...prev]
+          if (next[itemIndex]) {
+            next[itemIndex].status = 'error'
+            next[itemIndex].error = e?.message || 'Upload failed'
+          }
+          emitFiles(next)
+          return next
+        })
+      }
+    },
+    [campgroundId, images, onChange, onComplete]
+  )
+
+  const removeItem = (i: number) => {
+    setItems((prev) => {
+      const next = [...prev]
+      const [removed] = next.splice(i, 1)
+      if (removed?.preview) URL.revokeObjectURL(removed.preview)
+      emitFiles(next) // <-- and emit here
+      return next
+    })
+  }
+
+  const removeExistingImage = (path: string) => {
+    if (onChange) {
+      const updatedImages = images.filter((img) => img.path !== path)
+      onChange(updatedImages)
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Upload Images ({images.length}/{maxImages})
-        </label>
+    <div className="space-y-3">
+      {/* Drop zone */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={[
+          'w-full rounded-2xl border-2 border-dashed p-6 cursor-pointer transition',
+          dragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300 hover:border-gray-400',
+          remainingSlots === 0 ? 'opacity-50 cursor-not-allowed' : '',
+        ].join(' ')}
+        onClick={remainingSlots > 0 ? chooseFiles : undefined}
+        aria-label="Upload images"
+      >
+        <div className="text-center">
+          <div className="font-medium">
+            {remainingSlots > 0 ? 'Drag & drop images here' : 'Maximum images reached'}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {remainingSlots > 0
+              ? `or click to choose (JPEG, PNG, WebP, AVIF • up to ${MAX_SIZE_MB}MB • max ${maxImages} files)`
+              : `${images.length + items.length}/${maxImages} images selected`}
+          </div>
+        </div>
         <input
+          ref={inputRef}
           type="file"
           multiple
-          accept="image/*"
-          onChange={(e) => handleFiles(e.target.files)}
-          disabled={loading || images.length >= maxImages || !isAuthenticated}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+          accept={ACCEPTED.join(',')}
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && onChange) {
+              handleChosenFiles(e.target.files, images, onChange, supabase, maxImages, campgroundId)
+              // Clear the input so users can select the same files again
+              e.target.value = ''
+            }
+          }}
+          disabled={remainingSlots === 0}
         />
-        {images.length >= maxImages && (
-          <p className="text-sm text-amber-600 mt-1">Maximum number of images reached</p>
-        )}
-        {!isAuthenticated && (
-          <p className="text-sm text-red-600 mt-1">Please log in to upload images</p>
-        )}
       </div>
 
-      {loading && (
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          <p className="text-sm text-gray-600">Uploading images...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-sm text-red-600">{error}</p>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="text-xs text-red-500 hover:text-red-700 mt-1"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
+      {/* Existing images grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {images.map((img, index) => (
-            <div key={img.path} className="relative group">
-              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                <Image
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Images</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {images.map((img, i) => (
+              <div key={`existing-${i}`} className="relative overflow-hidden rounded-xl border">
+                <img
                   src={img.url}
-                  alt={`Upload ${index + 1}`}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  alt={`Current image ${i + 1}`}
+                  loading="lazy"
+                  className="h-32 w-full object-cover"
                 />
+                <div className="absolute left-0 right-0 bottom-0">
+                  <div className="text-[10px] bg-green-600 text-white px-2 py-1">Current</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeExistingImage(img.path)}
+                  className="absolute top-1 right-1 rounded-full bg-white/90 hover:bg-white px-2 py-1 text-xs shadow"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => remove(img.path)}
-                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
-                title="Remove image"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {images.length === 0 && (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            stroke="currentColor"
-            fill="none"
-            viewBox="0 0 48 48"
-          >
-            <path
-              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <p className="mt-2 text-sm text-gray-600">Click the upload button above to add images</p>
-        </div>
+      {remainingSlots > 0 && (
+        <div className="text-sm text-gray-500 text-center">{remainingSlots} slots remaining</div>
       )}
     </div>
   )

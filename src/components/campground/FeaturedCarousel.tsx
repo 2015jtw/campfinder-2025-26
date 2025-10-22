@@ -95,7 +95,19 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
         className="scrollbar-none flex gap-4 overflow-x-auto snap-x snap-mandatory py-6"
       >
         {items.map((cg) => {
-          const img = cg.images?.[0]?.url
+          const raw = cg.images?.[0]?.url
+          let img = raw
+          if (typeof raw === 'string') {
+            const s = raw.trim()
+            if (s.startsWith('[') && s.endsWith(']')) {
+              try {
+                const parsed = JSON.parse(s)
+                if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+                  img = parsed[0]
+                }
+              } catch {}
+            }
+          }
           const reviewCount = cg._count?.reviews ?? 0
 
           return (

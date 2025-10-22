@@ -9,6 +9,7 @@ import FilterSelect, { SortOption } from '@/components/util/FilterSelect'
 import Pagination from '@/components/util/Pagination'
 import CampgroundCard from '@/components/campground/CampgroundCard'
 import { CampgroundsSearchParams } from '@/types'
+import CampgroundsMap from '@/components/maps/CampgroundsMap'
 
 const PAGE_SIZE = 12
 
@@ -27,8 +28,22 @@ type CampgroundCardData = {
   _reviewsCount?: number
 }
 
+type CampgroundMapData = {
+  id: number
+  slug: string
+  title: string
+  location: string
+  latitude: number
+  longitude: number
+  price: number | null
+  image: string | null
+  avgRating: number | null
+  reviewsCount: number
+}
+
 type CampgroundsPageData = {
   rows: CampgroundCardData[]
+  mapData: CampgroundMapData[]
   total: number
 }
 
@@ -38,6 +53,20 @@ function parseParams(searchParams: Record<string, string>) {
   const sort = (searchParams.sort as SortOption) || 'alpha-asc'
 
   return { page, view, sort }
+}
+
+// Helper function to normalize URL (handle both string and JSON array)
+function normalizeImageUrl(url: string): string {
+  // If it looks like a JSON array, parse it and get the first item
+  if (url.startsWith('[') && url.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(url)
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : url
+    } catch {
+      return url
+    }
+  }
+  return url
 }
 
 function orderByFromSort(sort: SortOption) {
@@ -64,7 +93,7 @@ function orderByFromSort(sort: SortOption) {
 async function fetchCampgrounds(page: number, sort: SortOption): Promise<CampgroundsPageData> {
   const skip = (page - 1) * PAGE_SIZE
 
-  const [rawRows, total] = (await Promise.all([
+  const [rawRows, rawMapData, total] = (await Promise.all([
     withRetry(() =>
       prisma.campground.findMany({
         orderBy: orderByFromSort(sort),
@@ -83,8 +112,29 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
         },
       })
     ),
+    // Fetch all campgrounds for the map (with coordinates)
+    withRetry(() =>
+      prisma.campground.findMany({
+        where: {
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          price: true,
+          images: { select: { url: true }, take: 1 },
+          _count: { select: { reviews: true } },
+          reviews: { select: { rating: true } },
+        },
+      })
+    ),
     withRetry(() => prisma.campground.count()),
-  ])) as [any[], number]
+  ])) as [any[], any[], number]
 
   const rows: CampgroundCardData[] = rawRows.map((r) => {
     const avgRating =
@@ -106,7 +156,28 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
     }
   })
 
-  return { rows, total }
+  const mapData: CampgroundMapData[] = rawMapData.map((r) => {
+    const avgRating =
+      r.reviews.length > 0
+        ? r.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+          r.reviews.length
+        : null
+
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      location: r.location,
+      latitude: Number(r.latitude),
+      longitude: Number(r.longitude),
+      price: r.price == null ? null : Number(r.price),
+      image: r.images.length > 0 ? normalizeImageUrl(r.images[0].url) : null,
+      avgRating,
+      reviewsCount: r._count.reviews,
+    }
+  })
+
+  return { rows, mapData, total }
 }
 
 export default async function CampgroundsPage({
@@ -118,6 +189,7 @@ export default async function CampgroundsPage({
   const { page, view, sort } = parseParams(params ?? {})
 
   let rows: CampgroundCardData[] = []
+  let mapData: CampgroundMapData[] = []
   let total = 0
   let totalPages = 1
   let error: string | null = null
@@ -125,6 +197,7 @@ export default async function CampgroundsPage({
   try {
     const result = await fetchCampgrounds(page, sort)
     rows = result.rows
+    mapData = result.mapData
     total = result.total
     totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   } catch (err) {
@@ -141,6 +214,19 @@ export default async function CampgroundsPage({
           <ViewToggle view={view} />
         </div>
       </header>
+
+      {/* Map Section */}
+      {!error && mapData.length > 0 && (
+        <div className="w-full">
+          <CampgroundsMap
+            latitude={39.8283} // Center of continental US
+            longitude={-98.5795}
+            zoom={3}
+            height={825}
+            campgrounds={mapData}
+          />
+        </div>
+      )}
 
       {/* Error State */}
       {error && (
