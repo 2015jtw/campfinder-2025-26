@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MapPin, Calendar, User } from 'lucide-react'
 import { DeleteCampgroundButton } from './DeleteCampgroundButton'
+import { patterns, effects, interactive } from '@/lib/design-tokens'
 
 interface CampgroundDetailCardProps {
   campground: {
@@ -129,7 +130,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full ${effects.transition.colors} cursor-pointer`}
                 aria-label="Previous image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +145,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
 
               <button
                 onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full ${effects.transition.colors} cursor-pointer`}
                 aria-label="Next image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +164,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
+                    className={`w-2 h-2 rounded-full ${effects.transition.colors} cursor-pointer ${
                       index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                     }`}
                     aria-label={`Go to image ${index + 1}`}
@@ -235,7 +236,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
         {isOwner && (
           <div className="flex space-x-4 pt-4 border-t">
             <Link href={`/campgrounds/${campground.slug}/edit`}>
-              <Button variant="outline" className="flex items-center">
+              <Button variant="outline" className={`${patterns.button.outline} flex items-center`}>
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"

@@ -2,9 +2,12 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { User as UserIcon, Settings, MapPin, Star, LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { SignOutButton } from './auth/SignOutButton'
 import { SearchBar } from './util/SearchBar'
+import { ModeToggle } from './util/ModeToggle'
+import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 interface MobileMenuProps {
@@ -13,6 +16,8 @@ interface MobileMenuProps {
 
 export function MobileMenu({ user }: MobileMenuProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -20,6 +25,13 @@ export function MobileMenu({ user }: MobileMenuProps) {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false)
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+    closeMobileMenu()
   }
 
   return (
@@ -84,20 +96,60 @@ export function MobileMenu({ user }: MobileMenuProps) {
               </Link>
             </div>
 
+            {/* Mobile Theme Toggle */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Theme
+                  </span>
+                  <ModeToggle />
+                </div>
+              </div>
+            </div>
+
             {/* Mobile Auth Section */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
               {user ? (
                 <div className="space-y-2">
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
-                    onClick={closeMobileMenu}
-                  >
-                    Profile
-                  </Link>
-                  <div onClick={closeMobileMenu}>
-                    <SignOutButton />
+                  <div className="px-4 py-2">
+                    <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+                      Profile
+                    </h3>
+                    <div className="space-y-1">
+                      <Link
+                        href="/profile/account-settings"
+                        className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                        onClick={closeMobileMenu}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Account Settings
+                      </Link>
+                      <Link
+                        href="/profile/campgrounds"
+                        className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                        onClick={closeMobileMenu}
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        My Campgrounds
+                      </Link>
+                      <Link
+                        href="/profile/reviews"
+                        className="flex items-center px-3 py-2 text-sm text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                        onClick={closeMobileMenu}
+                      >
+                        <Star className="h-4 w-4 mr-2" />
+                        My Reviews
+                      </Link>
+                    </div>
                   </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Log out
+                  </button>
                 </div>
               ) : (
                 <Link href="/login" onClick={closeMobileMenu}>

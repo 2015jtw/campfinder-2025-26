@@ -1,9 +1,10 @@
-'use client';
+'use client'
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { DeleteCampground } from '@/app/campgrounds/actions';
-import { toast } from 'sonner';
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { DeleteCampground } from '@/app/campgrounds/actions'
+import { toast } from 'sonner'
+import { patterns, effects, interactive } from '@/lib/design-tokens'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,42 +15,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 
 export function DeleteCampgroundButton({ id }: { id: number }) {
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleDelete = () => {
     startTransition(async () => {
       try {
-        const formData = new FormData();
-        formData.append('id', id.toString());
-        
-        const result = await DeleteCampground(null, formData);
-        
+        const formData = new FormData()
+        formData.append('id', id.toString())
+
+        const result = await DeleteCampground(null, formData)
+
         if (result?.error) {
-          setError(result.error);
-          toast.error(result.error);
+          setError(result.error)
+          toast.error(result.error)
         } else {
           // Success - close dialog and redirect
-          setOpen(false);
-          toast.success('Campground deleted successfully!');
-          router.push('/');
+          setOpen(false)
+          toast.success('Campground deleted successfully!')
+          router.push('/')
         }
       } catch (err) {
-        setError('An unexpected error occurred');
-        toast.error('An unexpected error occurred');
+        setError('An unexpected error occurred')
+        toast.error('An unexpected error occurred')
       }
-    });
-  };
+    })
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <button className="flex items-center rounded-xl bg-red-600 px-4 py-2 text-white transition hover:bg-red-700">
+        <button
+          className={`flex items-center rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 font-medium text-sm ${effects.transition.colors} cursor-pointer`}
+        >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -66,7 +69,12 @@ export function DeleteCampgroundButton({ id }: { id: number }) {
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center">
             <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -78,7 +86,8 @@ export function DeleteCampgroundButton({ id }: { id: number }) {
             Delete Campground
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this campground? This action cannot be undone and will permanently remove all associated data including reviews and images.
+            Are you sure you want to delete this campground? This action cannot be undone and will
+            permanently remove all associated data including reviews and images.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -93,13 +102,28 @@ export function DeleteCampgroundButton({ id }: { id: number }) {
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isPending}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+            className={`bg-red-600 hover:bg-red-700 focus:ring-red-500 font-medium text-sm px-4 py-2 rounded-lg ${effects.transition.colors} cursor-pointer`}
           >
             {isPending ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Deleting...
               </>
@@ -110,5 +134,5 @@ export function DeleteCampgroundButton({ id }: { id: number }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }

@@ -9,6 +9,7 @@ import type { UpdateCampgroundActionResult } from '@/lib/validations/campground'
 import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
 import MapPinSelector from '@/components/maps/MapPinSelector'
 import { createClient } from '@/lib/supabase/client'
+import { patterns, effects, interactive } from '@/lib/design-tokens'
 
 type Campground = {
   id: number // Changed from string to number to match database schema
@@ -177,7 +178,7 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-xl bg-gray-200 hover:bg-gray-300 px-4 py-2 text-gray-700 transition-colors"
+          className={`${patterns.button.secondary}`}
         >
           Cancel
         </button>
@@ -202,7 +203,7 @@ function SubmitButton({
     <button
       type="submit"
       disabled={isPending}
-      className="rounded-xl bg-black px-4 py-2 text-white disabled:opacity-60"
+      className={`${patterns.button.primary} ${interactive.disabled}`}
     >
       {isPending ? (geocodingStatus ? 'Geocoding & Saving…' : 'Saving…') : children}
     </button>

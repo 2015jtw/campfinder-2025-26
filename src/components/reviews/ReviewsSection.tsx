@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Star, Plus } from 'lucide-react'
 import Review from './Review'
 import CreateReviewForm from './CreateReviewForm'
+import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
 
 interface Review {
   id: number
@@ -42,7 +43,7 @@ export default function ReviewsSection({
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+        className={`w-4 h-4 ${i < rating ? patterns.rating.filled : patterns.rating.empty}`}
       />
     ))
   }
@@ -53,16 +54,16 @@ export default function ReviewsSection({
       : 0
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className={`${patterns.card} p-6`}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Reviews</h2>
+          <h2 className={`text-xl font-semibold ${darkMode.text.primary}`}>Reviews</h2>
           {reviews.length > 0 && (
             <div className="flex items-center mt-1">
               <div className="flex items-center mr-2">
                 {renderStars(Math.round(Number(averageRating)))}
               </div>
-              <span className="text-sm text-gray-600">
+              <span className={`text-sm ${darkMode.text.secondary}`}>
                 {averageRating} ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
               </span>
             </div>
@@ -73,7 +74,7 @@ export default function ReviewsSection({
           <Button
             onClick={() => setShowAddReview(!showAddReview)}
             size="sm"
-            className="flex items-center"
+            className={`${patterns.button.primary} flex items-center`}
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Review
@@ -92,13 +93,13 @@ export default function ReviewsSection({
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <Star className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-lg font-medium mb-1">No reviews yet</p>
-          <p className="text-sm">Be the first to share your experience!</p>
+        <div className={`text-center py-8 ${darkMode.text.muted}`}>
+          <Star className={`w-12 h-12 mx-auto mb-3 ${patterns.rating.empty}`} />
+          <p className={`text-lg font-medium mb-1 ${darkMode.text.primary}`}>No reviews yet</p>
+          <p className={`text-sm ${darkMode.text.muted}`}>Be the first to share your experience!</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-6">
           {reviews.map((review) => (
             <Review
               key={review.id}
@@ -112,8 +113,8 @@ export default function ReviewsSection({
 
       {/* Login Prompt for Non-Authenticated Users */}
       {!isAuthenticated && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <div className="flex items-center text-blue-700 text-sm">
+        <div className={`mt-6 p-4 ${patterns.badge.info} rounded-lg`}>
+          <div className={`flex items-center text-sm`}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"

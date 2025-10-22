@@ -181,7 +181,7 @@ export default function EditProfileForm({
               className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 uploading || pending
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer'
               }`}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,7 +232,7 @@ export default function EditProfileForm({
           <Button
             type="submit"
             disabled={pending || uploading}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
           >
             {pending ? (
               <>

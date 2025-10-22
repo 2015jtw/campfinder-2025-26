@@ -3,10 +3,10 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/Header'
 import AuthProvider from '@/components/auth/AuthProvider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
 import 'mapbox-gl/dist/mapbox-gl.css'
-
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -38,13 +38,20 @@ export default async function RootLayout({
   } = await supabase.auth.getUser()
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AuthProvider initialUser={user}>
-          <Header />
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider initialUser={user}>
+            <Header />
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

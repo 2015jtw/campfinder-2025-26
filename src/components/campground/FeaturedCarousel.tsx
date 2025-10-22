@@ -71,7 +71,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
           type="button"
           aria-label="Previous"
           onClick={() => scrollByCards('left')}
-          className="hidden sm:block absolute -left-14 top-1/2 -translate-y-1/2 z-10 rounded-full border border-neutral-300 bg-white px-3 py-3 shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:border-neutral-400"
+          className="hidden sm:block absolute -left-14 top-1/2 -translate-y-1/2 z-10 rounded-full border border-neutral-300 bg-white px-3 py-3 shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:border-neutral-400 cursor-pointer"
         >
           <svg
             className="w-5 h-5 text-neutral-700"
@@ -203,7 +203,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
           type="button"
           aria-label="Next"
           onClick={() => scrollByCards('right')}
-          className="hidden sm:block absolute -right-14 top-1/2 -translate-y-1/2 z-10 rounded-full border border-neutral-300 bg-white px-3 py-3 shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:border-neutral-400"
+          className="hidden sm:block absolute -right-14 top-1/2 -translate-y-1/2 z-10 rounded-full border border-neutral-300 bg-white px-3 py-3 shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 hover:border-neutral-400 cursor-pointer"
         >
           <svg
             className="w-5 h-5 text-neutral-700"

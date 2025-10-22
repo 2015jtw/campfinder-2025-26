@@ -99,7 +99,7 @@ export default function UserReviewsClient({
                 </p>
                 <Link
                   href="/campgrounds"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
                 >
                   Browse Campgrounds
                 </Link>
@@ -131,7 +131,7 @@ export default function UserReviewsClient({
                       <div className="flex items-center justify-between mb-4">
                         <Link
                           href={`/campgrounds/${group.campground.slug}`}
-                          className="text-xl font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                          className="text-xl font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
                         >
                           {group.campground.title}
                         </Link>

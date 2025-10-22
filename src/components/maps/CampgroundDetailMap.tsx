@@ -112,7 +112,7 @@ export default function CampgroundDetailMap({
               href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center cursor-pointer"
             >
               Open in Maps
               <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

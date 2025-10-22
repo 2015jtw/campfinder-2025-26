@@ -25,7 +25,7 @@ export default function Pagination({
   return (
     <nav className="flex items-center justify-center gap-2" aria-label="Pagination">
       <Link
-        className="px-3 py-1.5 rounded border"
+        className="px-3 py-1.5 rounded border cursor-pointer"
         href={pageHref(prev, searchParams)}
         aria-disabled={currentPage === 1}
       >
@@ -35,13 +35,13 @@ export default function Pagination({
         <Link
           key={p}
           href={pageHref(p, searchParams)}
-          className={`px-3 py-1.5 rounded border ${p === currentPage ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
+          className={`px-3 py-1.5 rounded border cursor-pointer ${p === currentPage ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'}`}
         >
           {p}
         </Link>
       ))}
       <Link
-        className="px-3 py-1.5 rounded border"
+        className="px-3 py-1.5 rounded border cursor-pointer"
         href={pageHref(next, searchParams)}
         aria-disabled={currentPage === totalPages}
       >

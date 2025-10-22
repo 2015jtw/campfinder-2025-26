@@ -24,6 +24,7 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form'
+import { patterns, effects } from '@/lib/design-tokens'
 
 export default function NewCampgroundForm() {
   const router = useRouter()
@@ -89,7 +90,7 @@ export default function NewCampgroundForm() {
   return (
     <Form {...form}>
       <form
-        className="space-y-6"
+        className={patterns.form}
         suppressHydrationWarning
         onSubmit={async (e) => {
           e.preventDefault()
@@ -170,7 +171,7 @@ export default function NewCampgroundForm() {
         />
 
         {/* Location & Price row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={patterns.formRow}>
           <FormField
             control={form.control}
             name="location"
@@ -181,7 +182,11 @@ export default function NewCampgroundForm() {
                   <Input placeholder="Arlington, Virginia" {...field} />
                 </FormControl>
                 <FormMessage />
-                {geocodingStatus && <p className="text-sm text-blue-600 mt-1">{geocodingStatus}</p>}
+                {geocodingStatus && (
+                  <p className={`text-sm text-blue-600 dark:text-blue-400 mt-1`}>
+                    {geocodingStatus}
+                  </p>
+                )}
               </FormItem>
             )}
           />
@@ -271,14 +276,19 @@ export default function NewCampgroundForm() {
 
         {/* Global form errors */}
         {form.formState.errors.root && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-600">{form.formState.errors.root.message}</p>
+          <div
+            className={`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3`}
+          >
+            <p className={`text-sm text-red-600 dark:text-red-400`}>
+              {form.formState.errors.root.message}
+            </p>
           </div>
         )}
 
         <div className="flex justify-end">
           <Button
             type="submit"
+            className={patterns.button.primary}
             disabled={
               isSubmitting ||
               !form.watch('title') ||
