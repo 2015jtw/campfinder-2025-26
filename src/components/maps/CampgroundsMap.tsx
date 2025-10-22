@@ -211,10 +211,10 @@ export default function CampgroundsMap({
     if (!token || !containerRef.current || mapRef.current) return
     mapboxgl.accessToken = token
 
-    // Always use North American defaults - ignore props for center/zoom
-    const lat = DEFAULT_CENTER.lat
-    const lng = DEFAULT_CENTER.lng
-    const z = DEFAULT_ZOOM
+    // Use provided props for center/zoom, fallback to North American defaults
+    const lat = typeof latitude === 'number' ? latitude : DEFAULT_CENTER.lat
+    const lng = typeof longitude === 'number' ? longitude : DEFAULT_CENTER.lng
+    const z = typeof zoom === 'number' ? zoom : DEFAULT_ZOOM
 
     // Initialize map
     const map = new mapboxgl.Map({
@@ -310,9 +310,9 @@ export default function CampgroundsMap({
     const map = mapRef.current
     if (!map) return
 
-    // Always use North American defaults for marker positioning too
-    const lat = DEFAULT_CENTER.lat
-    const lng = DEFAULT_CENTER.lng
+    // Use provided props for marker positioning, fallback to defaults
+    const lat = typeof latitude === 'number' ? latitude : DEFAULT_CENTER.lat
+    const lng = typeof longitude === 'number' ? longitude : DEFAULT_CENTER.lng
 
     if (showMarker) {
       if (!markerRef.current) {
@@ -323,7 +323,7 @@ export default function CampgroundsMap({
       markerRef.current?.remove()
       markerRef.current = null
     }
-  }, [showMarker])
+  }, [latitude, longitude, showMarker])
 
   // Handle campground markers separately to respond to campgrounds prop changes
   useEffect(() => {

@@ -219,8 +219,8 @@ export default async function CampgroundsPage({
       {!error && mapData.length > 0 && (
         <div className="w-full">
           <CampgroundsMap
-            latitude={38.7946} // Center of continental US
-            longitude={106.5348}
+            latitude={39.8283} // Center of continental US
+            longitude={-98.5795}
             zoom={3}
             height={825}
             campgrounds={mapData}

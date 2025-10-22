@@ -29,7 +29,6 @@ export default function NewCampgroundForm() {
   const router = useRouter()
   const supabase = createClient()
   const [images, setImages] = useState<UploadedImage[]>([])
-  const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null)
@@ -247,7 +246,6 @@ export default function NewCampgroundForm() {
                 { shouldValidate: true }
               )
             }}
-            onFilesChange={(files) => setPendingFiles(files)}
             autoRecord={false} // do not record until campground is created
             maxImages={10}
           />
@@ -287,8 +285,7 @@ export default function NewCampgroundForm() {
               !form.watch('description') ||
               !form.watch('price') ||
               !form.watch('location') ||
-              (images.length === 0 && pendingFiles.length === 0) ||
-              pendingFiles.length > 0
+              images.length === 0
             }
           >
             {isSubmitting

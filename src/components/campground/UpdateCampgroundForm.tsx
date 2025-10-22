@@ -39,10 +39,10 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
   // Convert existing URLs to UploadedImage format (with unique paths for existing images)
   const existingImages: UploadedImage[] = (campground.images ?? []).map((url, index) => ({
     url: normalizeUrl(url),
-    path: `existing-${index}`, // Unique identifier for existing images
+    path: `existing-${campground.id}-${index}`, // Unique identifier for existing images
   }))
 
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(existingImages)
+  const [images, setImages] = useState<UploadedImage[]>(existingImages)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(
     campground.latitude && campground.longitude
       ? { lat: campground.latitude, lng: campground.longitude }
@@ -55,7 +55,7 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
 
   const handleSubmit = async (formData: FormData) => {
     // Add current images URLs to form data (as newline-separated string)
-    const imageUrls = uploadedImages.map((img) => img.url)
+    const imageUrls = images.map((img) => img.url)
     formData.set('images', imageUrls.join('\n'))
 
     // Add coordinates if manually set
@@ -82,10 +82,7 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
   }
 
   const handleImagesChange = useCallback((newImages: UploadedImage[]) => {
-    // Use setTimeout to avoid setState during render, similar to the fix in UploadImages
-    setTimeout(() => {
-      setUploadedImages(newImages)
-    }, 0)
+    setImages(newImages)
   }, [])
 
   return (
@@ -161,9 +158,10 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
       </div>
 
       <div>
+        <label className="block text-sm font-medium mb-2">Images</label>
         <UploadImages
           campgroundId={campground.id.toString()}
-          images={uploadedImages}
+          images={images}
           onChange={handleImagesChange}
           onComplete={(completedItems) => {
             console.log('Upload completed:', completedItems)
@@ -171,6 +169,8 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
           autoRecord={false} // Don't record in DB, we handle it in the form submission
           maxImages={10}
         />
+        {/* Keep server action happy with hidden input */}
+        <input type="hidden" name="images" value={images.map((i) => i.url).join('\n')} />
       </div>
 
       <div className="flex gap-3 justify-end">

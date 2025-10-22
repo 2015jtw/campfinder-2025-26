@@ -8,6 +8,56 @@ export type UploadedImage = {
   path: string
 }
 
+// Helper function to dedupe by path
+function dedupeByPath(arr: UploadedImage[]) {
+  const seen = new Set<string>()
+  return arr.filter((x) => (seen.has(x.path) ? false : (seen.add(x.path), true)))
+}
+
+// Handle multiple file uploads concurrently
+async function handleChosenFiles(
+  files: FileList | File[],
+  images: UploadedImage[],
+  onImagesChange: (next: UploadedImage[]) => void,
+  supabase: ReturnType<typeof createClient>,
+  max: number,
+  campgroundId?: string
+) {
+  // respect remaining slots
+  const remaining = Math.max(0, max - images.length)
+  const fileArr = Array.from(files).slice(0, remaining)
+
+  if (!fileArr.length) return
+
+  // Upload all concurrently
+  const results = await Promise.allSettled(
+    fileArr.map(async (file) => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const path =
+        campgroundId === 'new'
+          ? `temp/${crypto.randomUUID()}.${ext}`
+          : `campgrounds/${campgroundId}/${crypto.randomUUID()}.${ext}`
+
+      const { error } = await supabase.storage.from('campground-images').upload(path, file, {
+        upsert: false,
+        contentType: file.type || undefined,
+      })
+      if (error) throw error
+
+      const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
+      return { url: data.publicUrl, path } satisfies UploadedImage
+    })
+  )
+
+  const successes = results
+    .filter((r): r is PromiseFulfilledResult<UploadedImage> => r.status === 'fulfilled')
+    .map((r) => r.value)
+
+  if (successes.length) {
+    onImagesChange(dedupeByPath([...images, ...successes]))
+  }
+}
+
 type UploadItem = {
   file: File
   preview: string
@@ -73,7 +123,30 @@ export default function UploadImages({
     [onFilesChange]
   )
 
+  // Clean up any stuck items periodically
+  useEffect(() => {
+    const cleanup = () => {
+      setItems((prev) => {
+        const cleaned = prev.filter((item) => {
+          // Remove items that have been done for more than 1 second
+          if (item.status === 'done') {
+            return false
+          }
+          return true
+        })
+        if (cleaned.length !== prev.length) {
+          emitFiles(cleaned)
+        }
+        return cleaned
+      })
+    }
+
+    const interval = setInterval(cleanup, 1000)
+    return () => clearInterval(interval)
+  }, [emitFiles])
+
   const remainingSlots = useMemo(() => {
+    // Only count items that are actually pending (queued or uploading)
     const pendingCount = items.filter(
       (i) => i.status === 'queued' || i.status === 'uploading'
     ).length
@@ -86,83 +159,37 @@ export default function UploadImages({
     return null
   }
 
-  const startUploadsForNewItems = useCallback(
-    async (newItems: UploadItem[]) => {
-      // This function is only for existing campgrounds now
-      if (!campgroundId || campgroundId === 'new') {
-        console.error('startUploadsForNewItems should not be called for new campgrounds')
-        return
-      }
-
-      // Process each new item for upload
-      for (let i = 0; i < newItems.length; i++) {
-        const newItem = newItems[i]
-        if (newItem.error) continue
-
-        // Find the index of this item in the current items array and upload
-        setTimeout(() => {
-          setItems((currentItems) => {
-            const itemIndex = currentItems.findIndex(
-              (item) => item.file === newItem.file && item.status === 'queued'
-            )
-            if (itemIndex >= 0) {
-              uploadSingleItem(itemIndex)
-            }
-            return currentItems
-          })
-        }, i * 100) // Stagger uploads slightly
-      }
-    },
-    [campgroundId]
-  )
-
   const addFiles = useCallback(
     (files: FileList | null) => {
       if (!files) return
-      const toAdd: UploadItem[] = []
-      const limit = Math.min(files.length, remainingSlots)
-      for (let i = 0; i < limit; i++) {
+
+      // Validate files first
+      const validFiles: File[] = []
+      for (let i = 0; i < files.length && validFiles.length < remainingSlots; i++) {
         const file = files[i]
-        const fileKey = `${file.name}|${file.size}|${file.lastModified}`
-        if (queuedFilesRef.current.has(fileKey)) continue
         const err = validate(file)
-        toAdd.push({
-          file,
-          preview: URL.createObjectURL(file),
-          progress: 0,
-          status: err ? 'error' : 'queued',
-          error: err ?? undefined,
-        })
-        queuedFilesRef.current.add(fileKey)
+        if (!err) {
+          validFiles.push(file)
+        }
       }
-      setItems((prev) => {
-        const baseIndex = prev.length
-        const next = [...prev, ...toAdd]
-        emitFiles(next)
-        // Immediately kick off uploads for new campgrounds
-        setTimeout(() => {
-          if (!campgroundId || campgroundId === 'new') {
-            const validNew = toAdd
-              .map((item, offset) => ({ item, index: baseIndex + offset }))
-              .filter(({ item }) => !item.error)
-            validNew.forEach(({ index, item }) => uploadSingleItemForNew(index, item))
-          } else {
-            startUploadsForNewItems(toAdd.filter((item) => !item.error))
-          }
-        }, 0)
-        return next
-      })
+
+      if (validFiles.length > 0 && onChange) {
+        // Use the new concurrent upload approach
+        handleChosenFiles(validFiles, images, onChange, supabase, maxImages, campgroundId)
+      }
     },
-    [remainingSlots, startUploadsForNewItems]
+    [remainingSlots, images, onChange, supabase, maxImages, campgroundId]
   )
 
   const onDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault()
       setDragOver(false)
-      addFiles(e.dataTransfer.files)
+      if (e.dataTransfer?.files && onChange) {
+        handleChosenFiles(e.dataTransfer.files, images, onChange, supabase, maxImages, campgroundId)
+      }
     },
-    [addFiles]
+    [images, onChange, supabase, maxImages, campgroundId]
   )
 
   const chooseFiles = () => inputRef.current?.click()
@@ -205,99 +232,6 @@ export default function UploadImages({
       body: JSON.stringify({ campgroundId, path, alt }),
     })
   }
-
-  // Upload flow for new campgrounds using Supabase client (no progress events available)
-  const uploadSingleItemForNew = useCallback(
-    async (itemIndex: number, providedItem?: UploadItem) => {
-      // Always use the providedItem when available to avoid state race conditions
-      if (!providedItem) {
-        console.error('uploadSingleItemForNew called without providedItem')
-        return
-      }
-
-      const currentItem = providedItem
-      if (!currentItem || currentItem.status !== 'queued' || currentItem.error) return
-
-      setItems((prev) => {
-        const next = [...prev]
-        if (next[itemIndex]) next[itemIndex].status = 'uploading'
-        emitFiles(next)
-        return next
-      })
-
-      try {
-        const file = currentItem.file
-        const fileKey = `${file.name}|${file.size}|${file.lastModified}`
-        if (startedUploadsRef.current.has(fileKey)) {
-          return
-        }
-        startedUploadsRef.current.add(fileKey)
-        // Determine extension reliably
-        let ext = file.name.split('.').pop()?.toLowerCase()
-        if (!ext || ext === file.name.toLowerCase()) {
-          const mimeToExt: Record<string, string> = {
-            'image/jpeg': 'jpg',
-            'image/png': 'png',
-            'image/webp': 'webp',
-            'image/avif': 'avif',
-          }
-          ext = mimeToExt[file.type] || 'jpg'
-        }
-        const path = `temp/${crypto.randomUUID()}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('campground-images')
-          .upload(path, file, { cacheControl: '3600', upsert: false })
-
-        if (uploadError) throw new Error(uploadError.message)
-
-        const { data } = supabase.storage.from('campground-images').getPublicUrl(path)
-        const fullUrl = data.publicUrl
-
-        // Immediately remove completed item from local state to avoid UI confusion
-        setItems((prev) => {
-          const next = prev.filter((_, idx) => idx !== itemIndex)
-          emitFiles(next)
-          return next
-        })
-
-        // Update parent state with new image (strong dedupe by path)
-        if (onChange) {
-          const newImage: UploadedImage = { url: fullUrl, path }
-          if (uploadedSetRef.current.has(path)) {
-            // already processed
-          } else {
-            uploadedSetRef.current.add(path)
-            const currentImages = imagesRef.current
-            onChange([...currentImages, newImage])
-          }
-        }
-
-        // Notify completion for this item
-        const completedItem: UploadItem = {
-          ...currentItem,
-          status: 'done',
-          path,
-          url: fullUrl,
-          progress: 100,
-        }
-        onComplete?.([completedItem])
-
-        // Item already removed above
-      } catch (e: any) {
-        setItems((prev) => {
-          const next = [...prev]
-          if (next[itemIndex]) {
-            next[itemIndex].status = 'error'
-            next[itemIndex].error = e?.message || 'Upload failed'
-          }
-          emitFiles(next)
-          return next
-        })
-      }
-    },
-    [onChange, onComplete, supabase, imagesRef]
-  )
 
   const uploadSingleItem = useCallback(
     async (itemIndex: number) => {
@@ -397,8 +331,7 @@ export default function UploadImages({
 
   const removeExistingImage = (path: string) => {
     if (onChange) {
-      const currentImages = imagesRef.current
-      const updatedImages = currentImages.filter((img) => img.path !== path)
+      const updatedImages = images.filter((img) => img.path !== path)
       onChange(updatedImages)
     }
   }
@@ -437,7 +370,13 @@ export default function UploadImages({
           multiple
           accept={ACCEPTED.join(',')}
           className="hidden"
-          onChange={(e) => addFiles(e.target.files)}
+          onChange={(e) => {
+            if (e.target.files && onChange) {
+              handleChosenFiles(e.target.files, images, onChange, supabase, maxImages, campgroundId)
+              // Clear the input so users can select the same files again
+              e.target.value = ''
+            }
+          }}
           disabled={remainingSlots === 0}
         />
       </div>
@@ -467,64 +406,6 @@ export default function UploadImages({
                 </button>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* New upload items grid */}
-      {items.filter(
-        (it) => it.status === 'queued' || it.status === 'uploading' || it.status === 'error'
-      ).length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">New Uploads</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {items
-              .filter(
-                (it) => it.status === 'queued' || it.status === 'uploading' || it.status === 'error'
-              )
-              .map((it, i) => (
-                <div key={i} className="relative overflow-hidden rounded-xl border">
-                  {/* Preview (lazy) */}
-                  <img
-                    src={it.preview}
-                    alt={it.file.name}
-                    loading="lazy"
-                    className="h-32 w-full object-cover"
-                  />
-                  {/* Status / progress */}
-                  <div className="absolute left-0 right-0 bottom-0">
-                    {it.status === 'uploading' && (
-                      <div className="h-1 bg-gray-200">
-                        <div
-                          className="h-1 bg-emerald-500 transition-all"
-                          style={{ width: `${it.progress}%` }}
-                        />
-                      </div>
-                    )}
-                    {it.status === 'error' && (
-                      <div className="text-xs bg-red-50 text-red-600 px-2 py-1">{it.error}</div>
-                    )}
-                    {it.status === 'done' && (
-                      <div className="text-[10px] bg-emerald-600 text-white px-2 py-1">
-                        Uploaded
-                      </div>
-                    )}
-                    {it.status === 'queued' && (
-                      <div className="text-[10px] bg-blue-600 text-white px-2 py-1">Ready</div>
-                    )}
-                  </div>
-                  {/* Remove */}
-                  {it.status !== 'uploading' && (
-                    <button
-                      type="button"
-                      onClick={() => removeItem(i)}
-                      className="absolute top-1 right-1 rounded-full bg-white/90 hover:bg-white px-2 py-1 text-xs shadow"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
           </div>
         </div>
       )}
