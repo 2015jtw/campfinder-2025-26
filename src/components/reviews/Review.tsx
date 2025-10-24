@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { Star, User, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { darkMode } from '@/lib/design-tokens'
 
 interface ReviewProps {
   review: {
@@ -42,10 +43,12 @@ export default function Review({ review, currentUserId, onDelete }: ReviewProps)
   const isOwner = currentUserId === review.user.id
 
   return (
-    <div className="border-b border-gray-200 pb-4 last:border-b-0">
+    <div className={`border-b ${darkMode.border.default} pb-4 last:border-b-0`}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+          <div
+            className={`w-8 h-8 ${darkMode.bg.muted} rounded-full flex items-center justify-center mr-3`}
+          >
             {review.user.avatarUrl ? (
               <Image
                 src={review.user.avatarUrl}
@@ -55,16 +58,18 @@ export default function Review({ review, currentUserId, onDelete }: ReviewProps)
                 className="rounded-full"
               />
             ) : (
-              <User className="w-4 h-4 text-gray-600" />
+              <User className={`w-4 h-4 ${darkMode.text.muted}`} />
             )}
           </div>
           <div>
-            <div className="font-medium text-gray-900">
+            <div className={`font-medium ${darkMode.text.primary}`}>
               {review.user.displayName || 'Anonymous'}
             </div>
             <div className="flex items-center">
               <div className="flex items-center mr-2">{renderStars(review.rating)}</div>
-              <span className="text-sm text-gray-500">{formatDate(review.createdAt)}</span>
+              <span className={`text-sm ${darkMode.text.muted}`}>
+                {formatDate(review.createdAt)}
+              </span>
             </div>
           </div>
         </div>
@@ -81,9 +86,13 @@ export default function Review({ review, currentUserId, onDelete }: ReviewProps)
         )}
       </div>
 
-      {review.title && <h4 className="font-medium text-gray-900 mb-2">{review.title}</h4>}
+      {review.title && (
+        <h4 className={`font-medium ${darkMode.text.primary} mb-2`}>{review.title}</h4>
+      )}
 
-      {review.comment && <p className="text-gray-700 leading-relaxed">{review.comment}</p>}
+      {review.comment && (
+        <p className={`${darkMode.text.secondary} leading-relaxed`}>{review.comment}</p>
+      )}
     </div>
   )
 }

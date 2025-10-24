@@ -43,15 +43,15 @@ export default function ViewToggle({ view }: { view: 'grid' | 'list' }) {
 
   return (
     <div className="inline-flex items-center gap-2">
-      <span className="text-sm font-medium text-neutral-700">View</span>
-      <div className="inline-flex rounded-lg border border-neutral-300 p-1 bg-white shadow-sm">
+      <span className="text-sm font-medium text-slate-700 dark:text-white">View</span>
+      <div className="inline-flex rounded-lg border border-slate-300 dark:border-slate-600 p-1 bg-white dark:bg-slate-800 shadow-sm">
         <button
           onClick={() => setView('list')}
           className={cn(
             'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm rounded-md font-medium transition-all duration-200',
             view === 'list'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
           )}
           aria-pressed={view === 'list'}
           aria-label="List view"
@@ -65,7 +65,7 @@ export default function ViewToggle({ view }: { view: 'grid' | 'list' }) {
             'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm rounded-md font-medium transition-all duration-200',
             view === 'grid'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
           )}
           aria-pressed={view === 'grid'}
           aria-label="Grid view"

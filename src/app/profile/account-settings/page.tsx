@@ -48,21 +48,6 @@ export default async function AccountSettingsPage() {
           initialAvatarUrl={profile.avatarUrl}
         />
       </section>
-
-      <section className={patterns.card + ' p-8'}>
-        <div className="mb-6">
-          <h2 className={darkMode.text.primary + ' text-xl font-semibold'}>Appearance</h2>
-          <p className={darkMode.text.secondary + ' mt-1 text-sm'}>
-            Customize your theme preferences
-          </p>
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className={darkMode.text.primary + ' font-medium'}>Theme</h3>
-            <p className={darkMode.text.muted + ' text-sm'}>Choose your preferred color scheme</p>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

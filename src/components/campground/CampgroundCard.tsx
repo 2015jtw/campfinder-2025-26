@@ -69,11 +69,15 @@ export default function CampgroundCard({
                 {data.description}
               </p>
             )}
-            {reviewCount && reviewCount > 0 && (
-              <div className={`text-sm text-slate-500 dark:text-slate-400`}>
-                {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
-              </div>
-            )}
+            <div className={`text-sm text-slate-500 dark:text-slate-400`}>
+              {reviewCount && reviewCount > 0 ? (
+                <>
+                  {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                </>
+              ) : (
+                'No Reviews'
+              )}
+            </div>
           </div>
 
           <div className="flex items-baseline gap-1 mt-3">
@@ -106,7 +110,7 @@ export default function CampgroundCard({
                 </div>
               </div>
             )}
-            {rating && (
+            {rating && rating > 0 && (
               <div
                 className={`absolute top-3 right-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-2.5 py-1.5 rounded-md shadow-sm flex items-center gap-1`}
               >
@@ -118,6 +122,9 @@ export default function CampgroundCard({
                     />
                   ))}
                 </div>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 ml-1">
+                  {rating.toFixed(1)}
+                </span>
               </div>
             )}
           </AspectRatio>
@@ -153,7 +160,7 @@ export default function CampgroundCard({
             </div>
           </div>
         )}
-        {rating && (
+        {rating && rating > 0 && (
           <div
             className={`absolute top-3 right-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-md flex items-center gap-1`}
           >
@@ -165,6 +172,9 @@ export default function CampgroundCard({
                 />
               ))}
             </div>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 ml-1">
+              {rating.toFixed(1)}
+            </span>
           </div>
         )}
       </AspectRatio>
@@ -189,11 +199,15 @@ export default function CampgroundCard({
             </span>
             <span className={`text-xs text-slate-500 dark:text-slate-400`}>/ night</span>
           </div>
-          {reviewCount && reviewCount > 0 && (
-            <div className={`text-xs text-slate-500 dark:text-slate-400`}>
-              {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
-            </div>
-          )}
+          <div className={`text-xs text-slate-500 dark:text-slate-400`}>
+            {reviewCount && reviewCount > 0 ? (
+              <>
+                {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+              </>
+            ) : (
+              'No Reviews'
+            )}
+          </div>
         </div>
       </div>
     </Link>

@@ -5,6 +5,7 @@ import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createReviewAction } from '@/app/campgrounds/actions'
 import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { LoadingSpinner, LoadingOverlay } from '@/components/ui/loading-spinner'
 
 interface CreateReviewFormProps {
   campgroundId: number
@@ -69,62 +70,74 @@ export default function CreateReviewForm({
   }
 
   return (
-    <div className={`mb-6 p-6 ${darkMode.bg.secondary} rounded-lg ${darkMode.border.default}`}>
-      <h3 className={`font-semibold ${darkMode.text.primary} mb-4 text-lg`}>Write a Review</h3>
-      <form onSubmit={handleSubmit} className={patterns.form}>
-        {error && (
-          <div className={`p-3 ${patterns.badge.error} rounded-md`}>
-            <p className={`text-sm text-red-600 dark:text-red-400`}>{error}</p>
+    <LoadingOverlay isLoading={isSubmitting} loadingText="Submitting review...">
+      <div className={`mb-6 p-6 ${darkMode.bg.secondary} rounded-lg ${darkMode.border.default}`}>
+        <h3 className={`font-semibold ${darkMode.text.primary} mb-4 text-lg`}>Write a Review</h3>
+        <form onSubmit={handleSubmit} className={patterns.form}>
+          {error && (
+            <div className={`p-3 ${patterns.badge.error} rounded-md`}>
+              <p className={`text-sm text-red-600 dark:text-red-400`}>{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Rating *
+            </label>
+            <div className="flex space-x-1 mb-1">{renderStars(rating)}</div>
+            <p className={`text-xs ${darkMode.text.muted}`}>Click on a star to rate (1-5 stars)</p>
           </div>
-        )}
 
-        <div>
-          <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
-            Rating *
-          </label>
-          <div className="flex space-x-1 mb-1">{renderStars(rating)}</div>
-          <p className={`text-xs ${darkMode.text.muted}`}>Click on a star to rate (1-5 stars)</p>
-        </div>
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={`${patterns.input}`}
+              placeholder="Summarize your experience"
+            />
+          </div>
 
-        <div>
-          <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className={`${patterns.input}`}
-            placeholder="Summarize your experience"
-          />
-        </div>
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Comment *
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              className={`${patterns.input} resize-none`}
+              placeholder="Share your experience with other campers"
+              required
+            />
+          </div>
 
-        <div>
-          <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
-            Comment *
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            className={`${patterns.input} resize-none`}
-            placeholder="Share your experience with other campers"
-            required
-          />
-        </div>
-
-        <div className="flex space-x-3 pt-2">
-          <Button type="submit" disabled={isSubmitting} className={`${patterns.button.primary}`}>
-            {isSubmitting ? 'Submitting...' : 'Submit Review'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            className={`${patterns.button.outline}`}
-          >
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </div>
+          <div className="flex space-x-3 pt-2">
+            <Button type="submit" disabled={isSubmitting} className={`${patterns.button.primary}`}>
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                'Submit Review'
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className={`${patterns.button.outline}`}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </LoadingOverlay>
   )
 }

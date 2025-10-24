@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { User, Settings, MapPin, Star, LogOut } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,7 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 import { patterns, effects, interactive } from '@/lib/design-tokens'
 
 export function ProfileDropdown() {
-  const { theme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,7 +32,7 @@ export function ProfileDropdown() {
         <Button
           variant="ghost"
           size="sm"
-          className={`${patterns.button.ghost} text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+          className={`cursor-pointer ${patterns.button.ghost} text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
         >
           <User className="h-4 w-4 mr-2" />
           Profile
@@ -44,21 +42,21 @@ export function ProfileDropdown() {
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/profile/account-settings" className="flex items-center">
             <Settings className="h-4 w-4 mr-2" />
             Account Settings
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/profile/campgrounds" className="flex items-center">
             <MapPin className="h-4 w-4 mr-2" />
             My Campgrounds
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/profile/reviews" className="flex items-center">
             <Star className="h-4 w-4 mr-2" />
             My Reviews
@@ -67,7 +65,7 @@ export function ProfileDropdown() {
 
         <DropdownMenuSeparator />
 
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Theme</span>
             <ModeToggle />
@@ -76,7 +74,10 @@ export function ProfileDropdown() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+        >
           <LogOut className="h-4 w-4 mr-2" />
           Log out
         </DropdownMenuItem>

@@ -54,7 +54,7 @@ export default function ReviewsSection({
       : 0
 
   return (
-    <div className={`${patterns.card} p-6`}>
+    <div className={`${patterns.card} p-6 ${darkMode.border.default} border-2`}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className={`text-xl font-semibold ${darkMode.text.primary}`}>Reviews</h2>
