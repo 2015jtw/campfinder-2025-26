@@ -1,4 +1,5 @@
 import { Tent } from 'lucide-react'
+import Link from 'next/link'
 
 export default function HeroSection() {
   return (
@@ -39,20 +40,20 @@ export default function HeroSection() {
             </span>
           </h1>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8">
-            <div className="space-y-1 backdrop-blur-sm bg-white/10 rounded-xl p-4 border border-white/20">
-              <div className="text-3xl md:text-4xl font-bold text-white">5000+</div>
-              <div className="text-sm text-white/80">Campgrounds</div>
-            </div>
-            <div className="space-y-1 backdrop-blur-sm bg-white/10 rounded-xl p-4 border border-white/20">
-              <div className="text-3xl md:text-4xl font-bold text-white">50K+</div>
-              <div className="text-sm text-white/80">Reviews</div>
-            </div>
-            <div className="space-y-1 backdrop-blur-sm bg-white/10 rounded-xl p-4 border border-white/20">
-              <div className="text-3xl md:text-4xl font-bold text-white">4.8★</div>
-              <div className="text-sm text-white/80">Avg Rating</div>
-            </div>
+          {/* Call-to-Action */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+            <Link
+              href="/campgrounds/new"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 border border-emerald-500/20"
+            >
+              Create a Campground
+            </Link>
+            <Link
+              href="/campgrounds"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl backdrop-blur-md border border-white/20 hover:border-white/30 transform hover:-translate-y-1 transition-all duration-300"
+            >
+              Explore Campgrounds
+            </Link>
           </div>
         </div>
       </div>
