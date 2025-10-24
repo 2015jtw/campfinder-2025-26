@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import Footer from '@/components/Footer'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -50,6 +51,7 @@ export default async function RootLayout({
             <Header />
             {children}
             <Toaster />
+            <Footer />
           </AuthProvider>
         </ThemeProvider>
       </body>
