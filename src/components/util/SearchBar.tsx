@@ -113,7 +113,7 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
 
   return (
     <div ref={searchRef} className="relative w-full mx-auto xl:max-w-2xl 2xl:max-w-3xl">
-      <form onSubmit={handleSearch} className="relative">
+      <form onSubmit={handleSearch} className="relative" suppressHydrationWarning>
         <div className="flex items-center bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-2 lg:p-3">
           <MapPin className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 dark:text-slate-400 ml-2 lg:ml-3 mr-2 lg:mr-3 flex-shrink-0" />
           <input
