@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createReviewAction } from '@/app/campgrounds/actions'
+import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { LoadingSpinner, LoadingOverlay } from '@/components/ui/loading-spinner'
 
 interface CreateReviewFormProps {
   campgroundId: number
@@ -58,11 +60,9 @@ export default function CreateReviewForm({
         type="button"
         disabled={!interactive}
         onClick={() => interactive && setRating(i + 1)}
-        className={`transition-all duration-200 ${
-          i < currentRating
-            ? 'text-yellow-400 hover:text-yellow-500'
-            : 'text-gray-300 hover:text-gray-400'
-        } ${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
+        className={`${effects.transition.default} ${
+          i < currentRating ? patterns.rating.filled : patterns.rating.empty
+        } ${interactive ? `cursor-pointer hover:scale-110` : 'cursor-default'}`}
       >
         <Star className={`w-6 h-6 ${i < currentRating ? 'fill-current' : ''}`} />
       </button>
@@ -70,53 +70,74 @@ export default function CreateReviewForm({
   }
 
   return (
-    <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-      <h3 className="font-semibold text-gray-900 mb-4 text-lg">Write a Review</h3>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
+    <LoadingOverlay isLoading={isSubmitting} loadingText="Submitting review...">
+      <div className={`mb-6 p-6 ${darkMode.bg.secondary} rounded-lg ${darkMode.border.default}`}>
+        <h3 className={`font-semibold ${darkMode.text.primary} mb-4 text-lg`}>Write a Review</h3>
+        <form onSubmit={handleSubmit} className={patterns.form}>
+          {error && (
+            <div className={`p-3 ${patterns.badge.error} rounded-md`}>
+              <p className={`text-sm text-red-600 dark:text-red-400`}>{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Rating *
+            </label>
+            <div className="flex space-x-1 mb-1">{renderStars(rating)}</div>
+            <p className={`text-xs ${darkMode.text.muted}`}>Click on a star to rate (1-5 stars)</p>
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
-          <div className="flex space-x-1 mb-1">{renderStars(rating)}</div>
-          <p className="text-xs text-gray-500">Click on a star to rate (1-5 stars)</p>
-        </div>
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className={`${patterns.input}`}
+              placeholder="Summarize your experience"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            placeholder="Summarize your experience"
-          />
-        </div>
+          <div>
+            <label className={`block text-sm font-medium ${darkMode.text.primary} mb-2`}>
+              Comment *
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              className={`${patterns.input} resize-none`}
+              placeholder="Share your experience with other campers"
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Comment *</label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-            placeholder="Share your experience with other campers"
-            required
-          />
-        </div>
-
-        <div className="flex space-x-3 pt-2">
-          <Button type="submit" disabled={isSubmitting} className="px-6">
-            {isSubmitting ? 'Submitting...' : 'Submit Review'}
-          </Button>
-          <Button type="button" variant="outline" onClick={onCancel} className="px-6">
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </div>
+          <div className="flex space-x-3 pt-2">
+            <Button type="submit" disabled={isSubmitting} className={`${patterns.button.primary}`}>
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                'Submit Review'
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className={`${patterns.button.outline}`}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </LoadingOverlay>
   )
 }

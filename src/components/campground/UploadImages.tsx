@@ -400,7 +400,8 @@ export default function UploadImages({
                 <button
                   type="button"
                   onClick={() => removeExistingImage(img.path)}
-                  className="absolute top-1 right-1 rounded-full bg-white/90 hover:bg-white px-2 py-1 text-xs shadow"
+                  className="absolute top-1 right-1 rounded-full bg-white cursor-pointer hover:bg-gray-100 text-black px-2 py-1 text-xs shadow-lg transition-colors duration-200 flex items-center justify-center w-6 h-6"
+                  aria-label="Remove image"
                 >
                   ✕
                 </button>

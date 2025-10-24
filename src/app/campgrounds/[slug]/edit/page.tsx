@@ -36,11 +36,11 @@ export default async function EditCampgroundPage({ params }: EditCampgroundPageP
       images: {
         select: {
           url: true,
-          sortOrder: true
+          sortOrder: true,
         },
-        orderBy: { sortOrder: 'asc' }
-      }
-    }
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
   })
 
   if (!campground) {
@@ -59,21 +59,21 @@ export default async function EditCampgroundPage({ params }: EditCampgroundPageP
     description: campground.description,
     location: campground.location,
     price: Number(campground.price), // Convert Decimal to number
-    images: campground.images.map(img => img.url),
+    images: campground.images.map((img) => img.url),
     latitude: campground.latitude ? Number(campground.latitude) : null,
-    longitude: campground.longitude ? Number(campground.longitude) : null
+    longitude: campground.longitude ? Number(campground.longitude) : null,
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Campground</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Campground</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Update your campground information
           </p>
         </div>
-        
+
         <UpdateCampgroundForm campground={campgroundData} />
       </div>
     </div>

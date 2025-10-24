@@ -183,7 +183,7 @@ export default function MapPinSelector({
         {/* Instructions and controls */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <p className="text-sm text-gray-600 flex items-start gap-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
               <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <span>
                 Click anywhere on the map to drop a pin, or drag the marker to adjust the location
@@ -237,7 +237,7 @@ export default function MapPinSelector({
         />
 
         {/* Help text */}
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-white">
           💡 Tip: If you don't set a location, we'll try to geocode the address you provide
         </p>
       </div>

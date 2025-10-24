@@ -114,8 +114,8 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
   return (
     <div ref={searchRef} className="relative w-full mx-auto xl:max-w-2xl 2xl:max-w-3xl">
       <form onSubmit={handleSearch} className="relative">
-        <div className="flex items-center bg-white rounded-2xl shadow-lg border border-gray-100 p-2 lg:p-3">
-          <MapPin className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 ml-2 lg:ml-3 mr-2 lg:mr-3 flex-shrink-0" />
+        <div className="flex items-center bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-2 lg:p-3">
+          <MapPin className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 dark:text-slate-400 ml-2 lg:ml-3 mr-2 lg:mr-3 flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -123,13 +123,13 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
             value={query}
             onChange={handleInputChange}
             onFocus={() => query && setIsOpen(true)}
-            className="flex-1 outline-none text-gray-700 placeholder:text-gray-400 text-sm lg:text-base min-w-0 w-full py-2 lg:py-1"
+            className="flex-1 outline-none text-gray-700 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400 text-sm lg:text-base min-w-0 w-full py-2 lg:py-1 bg-transparent"
           />
           {query && (
             <button
               type="button"
               onClick={handleClear}
-              className="ml-2 text-gray-400 hover:text-gray-600 transition flex-shrink-0"
+              className="ml-2 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-300 transition flex-shrink-0"
               aria-label="Clear search"
             >
               <X className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -137,7 +137,7 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
           )}
           <button
             type="submit"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 sm:px-6 lg:px-8 py-2 lg:py-3 rounded-2xl cursor-pointer transition-colors flex-shrink-0 whitespace-nowrap ml-2"
+            className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold px-4 sm:px-6 lg:px-8 py-2 lg:py-3 rounded-2xl cursor-pointer transition-colors flex-shrink-0 whitespace-nowrap ml-2"
           >
             <span className="flex items-center">
               <svg
@@ -161,28 +161,32 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
 
       {/* Results Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-80 sm:max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-50 max-h-80 sm:max-h-96 overflow-y-auto">
           {isLoading && (
-            <div className="p-3 sm:p-4 text-center text-sm text-gray-500">Searching...</div>
+            <div className="p-3 sm:p-4 text-center text-sm text-gray-500 dark:text-slate-400">
+              Searching...
+            </div>
           )}
 
           {!isLoading && results.length === 0 && query.trim() && (
-            <div className="p-3 sm:p-4 text-center text-sm text-gray-500">No campgrounds found</div>
+            <div className="p-3 sm:p-4 text-center text-sm text-gray-500 dark:text-slate-400">
+              No campgrounds found
+            </div>
           )}
 
           {!isLoading && results.length > 0 && (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-100 dark:divide-slate-700">
               {results.map((result) => (
                 <li key={result.id}>
                   <Link
                     href={`/campgrounds/${result.slug}`}
                     onClick={handleResultClick}
-                    className="block px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 transition"
+                    className="block px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                   >
-                    <div className="font-medium text-gray-900 text-sm sm:text-base">
+                    <div className="font-medium text-gray-900 dark:text-slate-100 text-sm sm:text-base">
                       {result.title}
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                    <div className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
                       {result.location}
                       {result.price && ` • $${result.price}/night`}
                     </div>

@@ -20,7 +20,9 @@ export type FeaturedCarouselItem = {
   id: number
   slug: string
   title: string
+  location: string
   price: number
   images: { url: string }[]
   _count?: { reviews: number }
+  _avgRating?: number | null
 }

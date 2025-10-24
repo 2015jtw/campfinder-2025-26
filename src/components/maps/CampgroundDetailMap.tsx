@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { MapPin } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
+import { darkMode } from '@/lib/design-tokens'
 
 interface CampgroundDetailMapProps {
   latitude: number | null
@@ -74,10 +75,12 @@ export default function CampgroundDetailMap({
   }, [lat, lng, zoom])
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div
+      className={`${darkMode.bg.primary} rounded-lg shadow-lg p-6 ${darkMode.border.default} border-2`}
+    >
       <div className="flex items-center mb-4">
-        <MapPin className="w-5 h-5 text-gray-600 mr-2" />
-        <h2 className="text-xl font-semibold text-gray-900">Location</h2>
+        <MapPin className={`w-5 h-5 ${darkMode.text.muted} mr-2`} />
+        <h2 className={`text-xl font-semibold ${darkMode.text.primary}`}>Location</h2>
       </div>
 
       {lat !== null && lng !== null ? (
@@ -87,9 +90,11 @@ export default function CampgroundDetailMap({
           className="rounded-2xl overflow-hidden"
         />
       ) : (
-        <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <MapPin className="w-8 h-8 mx-auto mb-2" />
+        <div
+          className={`h-64 ${darkMode.bg.secondary} rounded-lg flex items-center justify-center`}
+        >
+          <div className={`text-center ${darkMode.text.muted}`}>
+            <MapPin className={`w-8 h-8 mx-auto mb-2 ${darkMode.text.muted}`} />
             <p>Location: {location}</p>
             <p className="text-sm mt-2">Coordinates not available</p>
           </div>
@@ -97,12 +102,12 @@ export default function CampgroundDetailMap({
       )}
 
       {/* Location Details */}
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+      <div className={`mt-4 p-3 ${darkMode.bg.secondary} rounded-lg`}>
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-medium text-gray-900">{location}</p>
+            <p className={`font-medium ${darkMode.text.primary}`}>{location}</p>
             {lat !== null && lng !== null && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className={`text-sm ${darkMode.text.muted} mt-1`}>
                 {lat.toFixed(6)}, {lng.toFixed(6)}
               </p>
             )}
@@ -112,7 +117,7 @@ export default function CampgroundDetailMap({
               href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium flex items-center cursor-pointer transition-colors"
             >
               Open in Maps
               <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

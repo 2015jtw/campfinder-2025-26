@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MapPin, Calendar, User } from 'lucide-react'
 import { DeleteCampgroundButton } from './DeleteCampgroundButton'
+import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
 
 interface CampgroundDetailCardProps {
   campground: {
@@ -112,10 +113,12 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div
+      className={`${darkMode.bg.primary} rounded-lg shadow-lg overflow-hidden ${darkMode.border.default} border-2`}
+    >
       {/* Image Carousel */}
       {validImages.length > 0 && currentImage && (
-        <div className="relative h-96 bg-gray-100">
+        <div className={`relative h-96 ${darkMode.bg.secondary}`}>
           <Image
             src={currentImage.url}
             alt={campground.title}
@@ -129,7 +132,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                className={`absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full ${effects.transition.colors} cursor-pointer`}
                 aria-label="Previous image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +147,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
 
               <button
                 onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                className={`absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full ${effects.transition.colors} cursor-pointer`}
                 aria-label="Next image"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +166,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
+                    className={`w-2 h-2 rounded-full ${effects.transition.colors} cursor-pointer ${
                       index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                     }`}
                     aria-label={`Go to image ${index + 1}`}
@@ -185,27 +188,35 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
         {/* Header with Title and Price */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{campground.title}</h1>
-            <div className="flex items-center text-gray-600 mb-2">
+            <h1 className={`text-3xl font-bold ${darkMode.text.primary} mb-2`}>
+              {campground.title}
+            </h1>
+            <div className={`flex items-center ${darkMode.text.secondary} mb-2`}>
               <MapPin className="w-4 h-4 mr-1" />
               <span>{campground.location}</span>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-green-600">{formatPrice(campground.price)}</div>
-            <div className="text-sm text-gray-500">per night</div>
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              {formatPrice(campground.price)}
+            </div>
+            <div className={`text-sm ${darkMode.text.muted}`}>per night</div>
           </div>
         </div>
 
         {/* Description */}
         <div className="mb-6">
-          <p className="text-gray-700 leading-relaxed">{campground.description}</p>
+          <p className={`${darkMode.text.secondary} leading-relaxed`}>{campground.description}</p>
         </div>
 
         {/* Owner Info */}
-        <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
+        <div
+          className={`flex items-center justify-between mb-6 p-4 ${darkMode.bg.secondary} rounded-lg`}
+        >
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3">
+            <div
+              className={`w-10 h-10 ${darkMode.bg.muted} rounded-full flex items-center justify-center mr-3`}
+            >
               {campground.owner.avatarUrl ? (
                 <Image
                   src={campground.owner.avatarUrl}
@@ -215,17 +226,17 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
                   className="rounded-full"
                 />
               ) : (
-                <User className="w-5 h-5 text-gray-600" />
+                <User className={`w-5 h-5 ${darkMode.text.muted}`} />
               )}
             </div>
             <div>
-              <div className="font-medium text-gray-900">
+              <div className={`font-medium ${darkMode.text.primary}`}>
                 {campground.owner.displayName || 'Anonymous'}
               </div>
-              <div className="text-sm text-gray-500">Campground Owner</div>
+              <div className={`text-sm ${darkMode.text.muted}`}>Campground Owner</div>
             </div>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className={`text-sm ${darkMode.text.muted}`}>
             <Calendar className="w-4 h-4 inline mr-1" />
             Listed {formatDate(campground.createdAt)}
           </div>
@@ -233,9 +244,12 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
 
         {/* Owner Actions */}
         {isOwner && (
-          <div className="flex space-x-4 pt-4 border-t">
+          <div className={`flex space-x-4 pt-4 ${darkMode.border.default} border-t`}>
             <Link href={`/campgrounds/${campground.slug}/edit`}>
-              <Button variant="outline" className="flex items-center">
+              <Button
+                variant="outline"
+                className={`${patterns.button.outline} flex items-center ${darkMode.text.primary} ${darkMode.border.default} hover:${darkMode.bg.secondary}`}
+              >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
