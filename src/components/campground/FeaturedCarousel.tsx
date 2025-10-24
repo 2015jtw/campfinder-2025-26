@@ -7,7 +7,7 @@ import { FeaturedCarouselItem } from '@/types'
 
 const SCROLL_THRESHOLD = 10
 const CARD_GAP = 16 // Should match gap-4 class (1rem = 16px)
-const FALLBACK_CARD_WIDTH = 300
+const FALLBACK_CARD_WIDTH = 360
 
 export default function FeaturedCarousel({ items }: { items: FeaturedCarouselItem[] }) {
   const trackRef = useRef<HTMLDivElement>(null)
@@ -96,7 +96,11 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
       {/* Track */}
       <div
         ref={trackRef}
-        className="scrollbar-none flex gap-4 overflow-x-auto snap-x snap-mandatory py-6"
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-6 scrollbar-hide"
+        style={{
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none', // IE and Edge
+        }}
       >
         {items.map((cg) => {
           const raw = cg.images?.[0]?.url
@@ -120,7 +124,7 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
               key={cg.id}
               href={`/campgrounds/${cg.slug}`}
               data-card
-              className="group snap-start shrink-0 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-1 transition-all duration-300"
+              className="group snap-start shrink-0 w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-1 transition-all duration-300"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
                 {img ? (
