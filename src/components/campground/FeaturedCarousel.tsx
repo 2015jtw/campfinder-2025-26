@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FeaturedCarouselItem } from '@/types'
+import { BLUR_DATA_URLS } from '@/lib/image-utils'
 
 const SCROLL_THRESHOLD = 10
 const CARD_GAP = 16 // Should match gap-4 class (1rem = 16px)
@@ -134,7 +135,12 @@ export default function FeaturedCarousel({ items }: { items: FeaturedCarouselIte
                       alt={cg.title}
                       width={512}
                       height={384}
+                      loading="lazy"
                       className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      placeholder="blur"
+                      blurDataURL={BLUR_DATA_URLS.campground}
+                      quality={85}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </>

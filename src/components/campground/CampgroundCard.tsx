@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Star, MapPin } from 'lucide-react'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { patterns, colors, effects, interactive } from '@/lib/design-tokens'
+import { BLUR_DATA_URLS } from '@/lib/image-utils'
 
 // Use the same DTO type as the page
 type CampgroundCardData = {
@@ -97,8 +98,14 @@ export default function CampgroundCard({
               <Image
                 src={imageUrl}
                 alt={data.title}
-                fill
+                width={512}
+                height={256}
+                loading="lazy"
                 className={`object-cover ${patterns.image.hover}`}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                placeholder="blur"
+                blurDataURL={BLUR_DATA_URLS.campground}
+                quality={85}
               />
             ) : (
               <div
@@ -147,8 +154,14 @@ export default function CampgroundCard({
           <Image
             src={imageUrl}
             alt={data.title}
-            fill
+            width={512}
+            height={384}
+            loading="lazy"
             className={`object-cover ${patterns.image.hoverStrong}`}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URLS.campground}
+            quality={85}
           />
         ) : (
           <div

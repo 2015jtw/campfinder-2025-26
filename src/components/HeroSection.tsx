@@ -1,17 +1,24 @@
 import { Tent } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { BLUR_DATA_URLS } from '@/lib/image-utils'
 
 export default function HeroSection() {
   return (
     <section className="relative overflow-hidden h-screen">
       {/* Background image with overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            'url(https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=2070&auto=format&fit=crop)',
-        }}
-      >
+      <div className="absolute inset-0">
+        <Image
+          src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=2070&auto=format&fit=crop"
+          alt="Beautiful camping landscape"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+          placeholder="blur"
+          blurDataURL={BLUR_DATA_URLS.campground}
+          quality={90}
+        />
         {/* Multi-layer overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/30 to-teal-900/30" />

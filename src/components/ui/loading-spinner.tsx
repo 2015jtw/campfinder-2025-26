@@ -92,7 +92,7 @@ export function LoadingOverlay({
       {children}
       {isLoading && (
         <div
-          className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50"
+          className="fixed inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50"
           role="status"
           aria-label={loadingText}
         >

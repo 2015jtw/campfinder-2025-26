@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { MapPin, Calendar, User } from 'lucide-react'
 import { DeleteCampgroundButton } from './DeleteCampgroundButton'
 import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { BLUR_DATA_URLS } from '@/lib/image-utils'
 
 interface CampgroundDetailCardProps {
   campground: {
@@ -125,6 +126,10 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
             fill
             className="object-cover"
             priority
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URLS.campground}
+            quality={90}
           />
 
           {/* Carousel Controls */}
