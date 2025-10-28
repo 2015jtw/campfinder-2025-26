@@ -78,7 +78,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection />
-      <main className="container mx-auto px-4 py-8 space-y-12">
+      <main className="container mx-auto px-4 py-12 space-y-12">
         {/* Most Reviewed Overall */}
         <section aria-labelledby="most-reviewed">
           <h2 id="most-reviewed" className="text-2xl font-bold text-center mb-6">
