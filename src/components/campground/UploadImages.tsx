@@ -1,7 +1,9 @@
 'use client'
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import type { DragEvent } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { BLUR_DATA_URLS } from '@/lib/image-utils'
 
 export type UploadedImage = {
   url: string
@@ -388,11 +390,16 @@ export default function UploadImages({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {images.map((img, i) => (
               <div key={`existing-${i}`} className="relative overflow-hidden rounded-xl border">
-                <img
+                <Image
                   src={img.url}
                   alt={`Current image ${i + 1}`}
-                  loading="lazy"
+                  width={128}
+                  height={128}
                   className="h-32 w-full object-cover"
+                  sizes="(max-width: 640px) 50vw, 25vw"
+                  placeholder="blur"
+                  blurDataURL={BLUR_DATA_URLS.default}
+                  quality={75}
                 />
                 <div className="absolute left-0 right-0 bottom-0">
                   <div className="text-[10px] bg-green-600 text-white px-2 py-1">Current</div>

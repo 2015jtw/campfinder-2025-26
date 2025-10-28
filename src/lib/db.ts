@@ -12,12 +12,26 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error as Error
 
+      // Enhanced error logging for debugging
+      console.error(`Database error on attempt ${attempt + 1}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        attempt: attempt + 1,
+        maxRetries: maxRetries + 1,
+      })
+
       // Check if it's a connection error
       if (
         error instanceof Error &&
         (error.message.includes('prepared statement') ||
           error.message.includes('connection') ||
-          error.message.includes('ConnectorError'))
+          error.message.includes('ConnectorError') ||
+          error.message.includes('P1001') || // Connection error
+          error.message.includes('P1008') || // Operation timeout
+          error.message.includes('P1017') || // Server closed connection
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('ECONNREFUSED'))
       ) {
         console.warn(`Database connection error on attempt ${attempt + 1}, retrying...`)
 
@@ -62,4 +76,21 @@ export async function findProfileForLayout(userId: string) {
       select: { displayName: true, avatarUrl: true },
     })
   )
+}
+
+// Diagnostic function to help debug database connection issues
+export async function testDatabaseConnection() {
+  try {
+    console.log('Testing database connection...')
+    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set')
+    console.log('DIRECT_URL:', process.env.DIRECT_URL ? 'Set' : 'Not set')
+    console.log('NODE_ENV:', process.env.NODE_ENV)
+
+    const result = await prisma.$queryRaw`SELECT 1 as test`
+    console.log('Database connection successful:', result)
+    return { success: true, result }
+  } catch (error) {
+    console.error('Database connection failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
 }

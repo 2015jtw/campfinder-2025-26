@@ -34,9 +34,9 @@ async function main() {
 
   console.log('🚨 WARNING: This will delete all existing campground data!')
   console.log('🚨 Proceeding in 3 seconds... (Ctrl+C to cancel)')
-  
+
   // Give user time to cancel if they ran this by mistake
-  await new Promise(resolve => setTimeout(resolve, 3000))
+  await new Promise((resolve) => setTimeout(resolve, 3000))
 
   const userId = '72b55e8c-f565-42d4-8521-5e5cdb52cd68'
   console.log(`Using user ID: ${userId}`)
@@ -89,7 +89,7 @@ async function main() {
         userId,
         images: {
           create: Array.from({ length: 3 }).map((_, idx) => ({
-            url: `https://picsum.photos/seed/cg${i}-${idx}/800/600`,
+            url: `https://picsum.photos/seed/cg${i}-${idx}/800/600?q=80&auto=format&fit=crop`,
             sortOrder: idx,
           })),
         },
