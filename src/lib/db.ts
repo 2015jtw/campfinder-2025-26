@@ -82,8 +82,6 @@ export async function findProfileForLayout(userId: string) {
 export async function testDatabaseConnection() {
   try {
     console.log('Testing database connection...')
-    console.log('PRODUCTION_DATABASE_URL:', process.env.PRODUCTION_DATABASE_URL ? 'Set' : 'Not set')
-    console.log('PRODUCTION_DIRECT_URL:', process.env.PRODUCTION_DIRECT_URL ? 'Set' : 'Not set')
     console.log('NODE_ENV:', process.env.NODE_ENV)
 
     const result = await prisma.$queryRaw`SELECT 1 as test`
