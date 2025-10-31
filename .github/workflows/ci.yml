@@ -51,7 +51,6 @@ jobs:
       contents: write
     env:
       PAT_TOKEN: ${{ secrets.PRODUCTION_PUSH_TOKEN }}
-      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,8 +68,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }} HEAD:production
-
-      - name: Trigger Vercel production deploy
-        if: env.VERCEL_DEPLOY_HOOK_URL != ''
-        run: |
-          curl -X POST -fsSL "$VERCEL_DEPLOY_HOOK_URL"
