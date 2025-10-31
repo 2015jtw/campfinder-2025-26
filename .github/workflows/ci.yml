@@ -46,10 +46,11 @@ jobs:
     name: Sync main to production
     runs-on: ubuntu-latest
     needs: tests
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     env:
+      PAT_TOKEN: ${{ secrets.PRODUCTION_PUSH_TOKEN }}
       VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
     steps:
       - name: Checkout repository
@@ -59,8 +60,6 @@ jobs:
           persist-credentials: false
 
       - name: Push HEAD to production
-        env:
-          PAT_TOKEN: ${{ secrets.PRODUCTION_PUSH_TOKEN }}
         run: |
           if [ -z "$PAT_TOKEN" ]; then
             echo "PRODUCTION_PUSH_TOKEN secret is not set."
