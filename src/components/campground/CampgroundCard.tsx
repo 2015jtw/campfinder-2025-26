@@ -52,7 +52,7 @@ export default function CampgroundCard({
     return (
       <Link
         href={`/campgrounds/${data.slug}`}
-        className={`group cursor-pointer flex gap-6 ${patterns.card} p-5`}
+        className={`group cursor-pointer flex flex-col md:flex-row gap-6 ${patterns.card} p-5`}
       >
         <div className="flex-1 flex flex-col justify-between py-1">
           <div>
@@ -89,7 +89,7 @@ export default function CampgroundCard({
           </div>
         </div>
 
-        <div className="w-[500px] shrink-0">
+        <div className="w-full md:w-[500px] md:shrink-0">
           <AspectRatio
             ratio={2 / 1}
             className={`bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-lg overflow-hidden`}
@@ -101,7 +101,7 @@ export default function CampgroundCard({
                 width={512}
                 height={256}
                 loading="lazy"
-                className={`object-cover ${patterns.image.hover}`}
+                className={`w-full h-full object-cover ${patterns.image.hover}`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 placeholder="blur"
                 blurDataURL={BLUR_DATA_URLS.campground}

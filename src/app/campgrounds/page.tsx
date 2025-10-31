@@ -207,7 +207,7 @@ export default async function CampgroundsPage({
 
   return (
     <section className="container mx-auto px-4 py-6 space-y-6">
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <header className="flex flex-col md:flex-row items-start justify-between gap-4">
         <h1 className="text-2xl font-semibold">Campgrounds</h1>
         <div className="flex items-center gap-3">
           <FilterSelect current={sort} />

@@ -191,8 +191,8 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
       {/* Campground Details */}
       <div className="p-6">
         {/* Header with Title and Price */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-4 md:gap-0">
+          <div className="flex-1">
             <h1 className={`text-3xl font-bold ${darkMode.text.primary} mb-2`}>
               {campground.title}
             </h1>
@@ -201,7 +201,7 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
               <span>{campground.location}</span>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-left md:text-right">
             <div className="text-3xl font-bold text-green-600 dark:text-green-400">
               {formatPrice(campground.price)}
             </div>
@@ -216,11 +216,11 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
 
         {/* Owner Info */}
         <div
-          className={`flex items-center justify-between mb-6 p-4 ${darkMode.bg.secondary} rounded-lg`}
+          className={`flex flex-col md:flex-row md:items-center md:justify-between mb-6 p-4 gap-4 md:gap-0 ${darkMode.bg.secondary} rounded-lg`}
         >
           <div className="flex items-center">
             <div
-              className={`w-10 h-10 ${darkMode.bg.muted} rounded-full flex items-center justify-center mr-3`}
+              className={`w-10 h-10 ${darkMode.bg.muted} rounded-full flex items-center justify-center mr-3 flex-shrink-0`}
             >
               {campground.owner.avatarUrl ? (
                 <Image
@@ -241,9 +241,9 @@ export default function CampgroundDetailCard({ campground, isOwner }: Campground
               <div className={`text-sm ${darkMode.text.muted}`}>Campground Owner</div>
             </div>
           </div>
-          <div className={`text-sm ${darkMode.text.muted}`}>
-            <Calendar className="w-4 h-4 inline mr-1" />
-            Listed {formatDate(campground.createdAt)}
+          <div className={`text-sm ${darkMode.text.muted} flex items-center md:ml-4`}>
+            <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
+            <span>Listed {formatDate(campground.createdAt)}</span>
           </div>
         </div>
 
