@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { MapPin, Locate, X } from 'lucide-react'
 
@@ -27,6 +27,34 @@ export default function MapPinSelector({
   const [isLoaded, setIsLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [isLocating, setIsLocating] = useState(false)
+
+  const placeMarker = useCallback(
+    (lat: number, lng: number) => {
+      if (!mapRef.current) return
+
+      // Remove existing marker
+      if (markerRef.current) {
+        markerRef.current.remove()
+      }
+
+      // Create new draggable marker
+      const marker = new mapboxgl.Marker({
+        color: '#059669',
+        draggable: true,
+      })
+        .setLngLat([lng, lat])
+        .addTo(mapRef.current)
+
+      // Handle drag events
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat()
+        onCoordinatesChange(lngLat.lat, lngLat.lng)
+      })
+
+      markerRef.current = marker
+    },
+    [onCoordinatesChange]
+  )
 
   // Initialize map
   useEffect(() => {
@@ -84,6 +112,7 @@ export default function MapPinSelector({
       console.error('Map initialization error:', error)
       setMapError('Failed to initialize map')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
 
   // Update marker when coordinates change externally
@@ -98,32 +127,7 @@ export default function MapPinSelector({
         duration: 1000,
       })
     }
-  }, [latitude, longitude, isLoaded])
-
-  const placeMarker = (lat: number, lng: number) => {
-    if (!mapRef.current) return
-
-    // Remove existing marker
-    if (markerRef.current) {
-      markerRef.current.remove()
-    }
-
-    // Create new draggable marker
-    const marker = new mapboxgl.Marker({
-      color: '#059669',
-      draggable: true,
-    })
-      .setLngLat([lng, lat])
-      .addTo(mapRef.current)
-
-    // Handle drag events
-    marker.on('dragend', () => {
-      const lngLat = marker.getLngLat()
-      onCoordinatesChange(lngLat.lat, lngLat.lng)
-    })
-
-    markerRef.current = marker
-  }
+  }, [latitude, longitude, isLoaded, placeMarker])
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
@@ -238,7 +242,8 @@ export default function MapPinSelector({
 
         {/* Help text */}
         <p className="text-xs text-gray-500 dark:text-white">
-          💡 Tip: If you don't set a location, we'll try to geocode the address you provide
+          💡 Tip: If you don&apos;t set a location, we&apos;ll try to geocode the address you
+          provide
         </p>
       </div>
     </div>
