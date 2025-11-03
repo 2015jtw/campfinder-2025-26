@@ -107,7 +107,7 @@ async function main() {
   }
 
   // Clear existing data first
-  console.log('Clearing existing data...')
+  console.log('Clearing existing data.....')
   await prisma.review.deleteMany({})
   await prisma.image.deleteMany({})
   await prisma.campground.deleteMany({})
