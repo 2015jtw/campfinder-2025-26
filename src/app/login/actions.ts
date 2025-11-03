@@ -5,45 +5,31 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 
-export async function login(formData: FormData) {
+export async function sendMagicLink(formData: FormData) {
   const supabase = await createClient()
 
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
+  const email = formData.get('email') as string
 
-  const { error } = await supabase.auth.signInWithPassword(data)
-
-  if (error) {
+  if (!email) {
     redirect('/error')
   }
 
-  // invalidate cache so client header can see new session
-  revalidatePath('/', 'layout')
-  redirect('/')
-}
-
-export async function signup(formData: FormData) {
-  const supabase = await createClient()
-
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
-
-  const { error } = await supabase.auth.signUp(data)
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      // This allows the magic link to work for both login and signup
+      shouldCreateUser: true,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+    },
+  })
 
   if (error) {
+    console.error('Magic link error:', error)
     redirect('/error')
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/')
+  // Don't redirect - let the client component handle the UI state
+  revalidatePath('/login')
 }
 
 export async function loginWithGoogle() {

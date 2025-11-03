@@ -148,7 +148,7 @@ export default function UserReviewsClient({
                 </p>
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-8 ">
                 {(() => {
                   // Group reviews by campground
                   const groupedReviews = filteredReviews.reduce(

@@ -92,6 +92,7 @@ export default async function CampgroundDetailPage({ params }: CampgroundDetailP
               }}
               isOwner={isOwner}
             />
+            <p>hello world</p>
           </div>
 
           {/* Right Column - Map and Reviews */}
