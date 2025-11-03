@@ -51,6 +51,22 @@ export default async function Header() {
                   Create
                 </NavigationMenuLink>
               </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  href="/about-us"
+                  className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+                >
+                  About
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  href="/contact-us"
+                  className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+                >
+                  Contact
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
