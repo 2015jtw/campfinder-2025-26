@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Star, Plus } from 'lucide-react'
 import Review from './Review'
 import CreateReviewForm from './CreateReviewForm'
-import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { patterns, darkMode } from '@/lib/design-tokens'
 
 interface Review {
   id: number

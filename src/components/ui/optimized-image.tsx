@@ -31,7 +31,6 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const commonProps = {
     src,
-    alt,
     priority,
     quality,
     className: cn('object-cover', className),
@@ -41,10 +40,10 @@ export function OptimizedImage({
   }
 
   if (fill) {
-    return <Image {...commonProps} fill />
+    return <Image {...commonProps} fill alt={alt} />
   }
 
-  return <Image {...commonProps} width={width!} height={height!} />
+  return <Image {...commonProps} width={width!} height={height!} alt={alt} />
 }
 
 // Specialized components for common use cases
