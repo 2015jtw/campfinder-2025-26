@@ -4,6 +4,7 @@ export const revalidate = 60 // ISR is fine for public list
 import { prisma } from '@/lib/prisma'
 import { withRetry } from '@/lib/db'
 import HeroSection from '@/components/HeroSection'
+import AboutSection from '@/components/AboutSection'
 import FeaturedCarousel from '@/components/campground/FeaturedCarousel'
 import type { Prisma } from '@prisma/client'
 
@@ -78,6 +79,8 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection />
+      <AboutSection />
+
       <main className="container mx-auto px-4 py-12 space-y-12">
         {/* Most Reviewed Overall */}
         <section aria-labelledby="most-reviewed">
@@ -118,7 +121,9 @@ export default async function HomePage() {
             </div>
           )}
         </section>
+      </main>
 
+      <main className="container mx-auto px-4 py-12">
         {/* Budget-Friendly Picks */}
         <section aria-labelledby="budget-friendly">
           <h2 id="budget-friendly" className="text-2xl font-bold text-center mb-6">

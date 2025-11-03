@@ -94,6 +94,20 @@ export function MobileMenu({ user }: MobileMenuProps) {
               >
                 Create
               </Link>
+              <Link
+                href="/about-us"
+                className="flex items-center px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                onClick={closeMobileMenu}
+              >
+                About
+              </Link>
+              <Link
+                href="/contact-us"
+                className="flex items-center px-4 py-3 text-base font-medium text-slate-700 rounded-lg transition-colors hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-200 dark:hover:text-emerald-400 dark:hover:bg-slate-800"
+                onClick={closeMobileMenu}
+              >
+                Contact
+              </Link>
             </nav>
 
             {/* Mobile Theme Toggle */}
