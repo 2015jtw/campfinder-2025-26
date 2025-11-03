@@ -103,7 +103,7 @@ async function main() {
     })
     console.log('Profile created successfully')
   } else {
-    console.log('Profile found, proceeding with seed...')
+    console.log('Profile found, proceeding with seed.....')
   }
 
   // Clear existing data first
