@@ -64,19 +64,21 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Record image error:', error)
 
     // Handle specific error types
-    if (error.code === 'P2002') {
-      return NextResponse.json(
-        { error: 'Image already exists for this campground' },
-        { status: 409 }
-      )
-    }
+    if (error && typeof error === 'object' && 'code' in error) {
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Image already exists for this campground' },
+          { status: 409 }
+        )
+      }
 
-    if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'Campground not found' }, { status: 404 })
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'Campground not found' }, { status: 404 })
+      }
     }
 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

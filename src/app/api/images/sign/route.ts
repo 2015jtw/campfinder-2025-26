@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       path,
       fullUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Sign URL error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
