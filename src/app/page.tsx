@@ -3,9 +3,9 @@ export const revalidate = 60 // ISR is fine for public list
 
 import { prisma } from '@/lib/prisma'
 import { withRetry } from '@/lib/db'
-import Link from 'next/link'
 import HeroSection from '@/components/HeroSection'
 import FeaturedCarousel from '@/components/campground/FeaturedCarousel'
+import type { Prisma } from '@prisma/client'
 
 type FeaturedCampground = {
   id: string
@@ -20,11 +20,11 @@ type FeaturedCampground = {
 }
 
 async function fetchCampgroundsByCriteria(
-  orderBy: any,
+  orderBy: Prisma.CampgroundOrderByWithRelationInput,
   take: number = 8
 ): Promise<FeaturedCampground[]> {
   try {
-    const raw = (await withRetry(() =>
+    const raw = await withRetry(() =>
       prisma.campground.findMany({
         take,
         orderBy,
@@ -40,7 +40,7 @@ async function fetchCampgroundsByCriteria(
           reviews: { select: { rating: true } },
         },
       })
-    )) as any[]
+    )
 
     return raw.map((r) => {
       const avgRating =

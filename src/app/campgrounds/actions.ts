@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
 import {
   CreateCampgroundSchema,
   slugify,
@@ -80,7 +79,7 @@ export async function createCampgroundAction(
     if (Array.isArray(parsedImages)) {
       uploadedImages = parsedImages.filter((i) => i && typeof i.url === 'string')
     }
-  } catch (e) {
+  } catch {
     return { ok: false, errors: { images: ['Invalid image data'] } }
   }
 
@@ -192,8 +191,9 @@ export async function updateCampgroundAction(
       price: formData.get('price'),
       images: formData.get('images') ?? '',
     })
-  } catch (e: any) {
-    return { ok: false, error: 'Invalid form data: ' + (e?.message ?? 'Validation failed') }
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Validation failed'
+    return { ok: false, error: 'Invalid form data: ' + message }
   }
 
   const supabase = await createClient()
@@ -268,8 +268,9 @@ export async function updateCampgroundAction(
       },
       select: { slug: true },
     })
-  } catch (e: any) {
-    return { ok: false, error: 'Database update failed: ' + (e?.message ?? 'Update failed') }
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Update failed'
+    return { ok: false, error: 'Database update failed: ' + message }
   }
 
   revalidatePath(`/campgrounds/${updatedCampground.slug}`)
@@ -312,8 +313,9 @@ export async function DeleteCampground(_prev: unknown, formData: FormData) {
 
     // Return success state instead of redirect (for useActionState)
     return { success: true }
-  } catch (e: any) {
-    return { error: e?.message ?? 'Delete failed' }
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Delete failed'
+    return { error: message }
   }
 }
 
@@ -375,7 +377,7 @@ export async function createReviewAction(formData: FormData): Promise<CreateRevi
     }
 
     return { ok: true, id: review.id }
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Create review error:', e)
     return { ok: false, error: 'Failed to create review' }
   }
@@ -427,7 +429,7 @@ export async function deleteReviewAction(formData: FormData): Promise<DeleteRevi
     }
 
     return { ok: true }
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Delete review error:', e)
     return { ok: false, error: 'Failed to delete review' }
   }
@@ -474,8 +476,9 @@ export async function geocodeAllCampgrounds() {
         data: { latitude, longitude },
       })
       updated++
-    } catch (e: any) {
-      failed.push({ id: c.id, reason: e?.message || 'Request failed' })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Request failed'
+      failed.push({ id: c.id, reason: message })
     }
 
     // Respect API rate limits

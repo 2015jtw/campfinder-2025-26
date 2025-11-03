@@ -50,7 +50,7 @@ export default function UserReviewsClient({
       } else {
         toast.error(result.error || 'Failed to delete review')
       }
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     }
   }
@@ -163,7 +163,10 @@ export default function UserReviewsClient({
                       acc[campgroundId].reviews.push(review)
                       return acc
                     },
-                    {} as Record<number, { campground: any; reviews: any[] }>
+                    {} as Record<
+                      number,
+                      { campground: { id: number; title: string; slug: string }; reviews: Review[] }
+                    >
                   )
 
                   return Object.values(groupedReviews).map((group) => (

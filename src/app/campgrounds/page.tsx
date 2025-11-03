@@ -10,6 +10,7 @@ import Pagination from '@/components/util/Pagination'
 import CampgroundCard from '@/components/campground/CampgroundCard'
 import { CampgroundsSearchParams } from '@/types'
 import CampgroundsMap from '@/components/maps/CampgroundsMap'
+import type { Prisma } from '@prisma/client'
 
 const PAGE_SIZE = 12
 
@@ -93,7 +94,8 @@ function orderByFromSort(sort: SortOption) {
 async function fetchCampgrounds(page: number, sort: SortOption): Promise<CampgroundsPageData> {
   const skip = (page - 1) * PAGE_SIZE
 
-  const [rawRows, rawMapData, total] = (await Promise.all([
+  // Fix the type mismatch by explicitly annotating the expected structure for each query
+  const [rawRows, rawMapData, total] = await Promise.all([
     withRetry(() =>
       prisma.campground.findMany({
         orderBy: orderByFromSort(sort),
@@ -111,7 +113,19 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
           reviews: { select: { rating: true } },
         },
       })
-    ),
+    ) as Promise<
+      {
+        id: number
+        slug: string
+        title: string
+        location: string
+        description: string
+        price: Prisma.Decimal | null
+        images: { url: string }[]
+        _count: { reviews: number }
+        reviews: { rating: number }[]
+      }[]
+    >,
     // Fetch all campgrounds for the map (with coordinates)
     withRetry(() =>
       prisma.campground.findMany({
@@ -132,13 +146,26 @@ async function fetchCampgrounds(page: number, sort: SortOption): Promise<Campgro
           reviews: { select: { rating: true } },
         },
       })
-    ),
-    withRetry(() => prisma.campground.count()),
-  ])) as [any[], any[], number]
+    ) as Promise<
+      {
+        id: number
+        slug: string
+        title: string
+        location: string
+        latitude: number
+        longitude: number
+        price: Prisma.Decimal | null
+        images: { url: string }[]
+        _count: { reviews: number }
+        reviews: { rating: number }[]
+      }[]
+    >,
+    withRetry(() => prisma.campground.count()) as Promise<number>,
+  ])
 
   const rows: CampgroundCardData[] = rawRows.map((r) => {
     const avgRating =
-      r.reviews.length > 0
+      r.reviews && r.reviews.length > 0
         ? r.reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
           r.reviews.length
         : null
