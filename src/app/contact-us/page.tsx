@@ -60,6 +60,17 @@ export default function ContactPage() {
         body: JSON.stringify(values),
       })
 
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        // If not JSON, it's likely an error page
+        const text = await response.text()
+        console.error('Non-JSON response:', text.substring(0, 200))
+        throw new Error(
+          'Server configuration error. Please check that SMTP environment variables are set correctly.'
+        )
+      }
+
       const data = await response.json()
 
       if (!response.ok) {

@@ -9,22 +9,34 @@ const contactSchema = z.object({
   message: z.string().min(10),
 })
 
-// Create reusable transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-})
-
 export async function POST(request: NextRequest) {
   try {
+    // Check for required environment variables
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      console.error('Missing SMTP environment variables')
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email service is not configured. Please contact the administrator.',
+        },
+        { status: 500 }
+      )
+    }
+
     // Parse and validate request body
     const body = await request.json()
     const validatedData = contactSchema.parse(body)
+
+    // Create transporter inside the request handler
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    })
 
     // Send email using Nodemailer
     const info = await transporter.sendMail({

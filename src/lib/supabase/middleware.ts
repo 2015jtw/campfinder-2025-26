@@ -48,6 +48,7 @@ export async function updateSession(request: NextRequest) {
     '/privacy',
     '/terms',
     '/contact-us',
+    '/api/contact', // Public API endpoint for contact form
   ]
 
   // Check if the current path is public
