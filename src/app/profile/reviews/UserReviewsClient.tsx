@@ -143,7 +143,7 @@ export default function UserReviewsClient({
                 <h3 className="text-lg font-medium mb-2 text-slate-900 dark:text-slate-100">
                   No reviews found
                 </h3>
-                <p className="text-sm mb-4 text-slate-600 dark:text-slate-400">
+                <p className="text-sm mb-4 text-slate-600 dark:text-slate-400 ">
                   Try adjusting your search terms to find reviews.
                 </p>
               </div>
