@@ -256,7 +256,6 @@ export default function NewCampgroundForm() {
                   { shouldValidate: true }
                 )
               }}
-              autoRecord={false} // do not record until campground is created
               maxImages={10}
             />
             {form.formState.errors.images && (
