@@ -1,6 +1,5 @@
 generator client {
   provider      = "prisma-client-js"
-  // add linux-musl for Vercel
   binaryTargets = ["native", "linux-musl"]
 }
 

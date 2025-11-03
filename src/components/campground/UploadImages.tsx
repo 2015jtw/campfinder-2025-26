@@ -78,17 +78,13 @@ export default function UploadImages({
   campgroundId,
   images = [],
   onChange,
-  onComplete,
   onFilesChange,
-  autoRecord = true, // hit /api/images/record after upload
   maxImages = MAX_FILES,
 }: {
   campgroundId?: string
   images?: UploadedImage[]
   onChange?: (images: UploadedImage[]) => void
-  onComplete?: (items: UploadItem[]) => void
   onFilesChange?: (files: File[]) => void
-  autoRecord?: boolean
   maxImages?: number
 }) {
   const [items, setItems] = useState<UploadItem[]>([])
@@ -97,8 +93,6 @@ export default function UploadImages({
   const supabase = useMemo(() => createClient(), [])
   const imagesRef = useRef<UploadedImage[]>(images)
   const uploadedSetRef = useRef<Set<string>>(new Set())
-  const queuedFilesRef = useRef<Set<string>>(new Set())
-  const startedUploadsRef = useRef<Set<string>>(new Set())
 
   // Keep imagesRef in sync with images prop
   useEffect(() => {
@@ -155,34 +149,6 @@ export default function UploadImages({
     return Math.max(0, maxImages - images.length - pendingCount)
   }, [maxImages, images.length, items])
 
-  const validate = (f: File): string | null => {
-    if (!ACCEPTED.includes(f.type)) return 'Unsupported file type'
-    if (f.size > MAX_SIZE_MB * 1024 * 1024) return `File too large (> ${MAX_SIZE_MB} MB)`
-    return null
-  }
-
-  const addFiles = useCallback(
-    (files: FileList | null) => {
-      if (!files) return
-
-      // Validate files first
-      const validFiles: File[] = []
-      for (let i = 0; i < files.length && validFiles.length < remainingSlots; i++) {
-        const file = files[i]
-        const err = validate(file)
-        if (!err) {
-          validFiles.push(file)
-        }
-      }
-
-      if (validFiles.length > 0 && onChange) {
-        // Use the new concurrent upload approach
-        handleChosenFiles(validFiles, images, onChange, supabase, maxImages, campgroundId)
-      }
-    },
-    [remainingSlots, images, onChange, supabase, maxImages, campgroundId]
-  )
-
   const onDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault()
@@ -195,141 +161,6 @@ export default function UploadImages({
   )
 
   const chooseFiles = () => inputRef.current?.click()
-
-  const signUrl = async (originalName: string) => {
-    if (!campgroundId) {
-      throw new Error('Campground ID is required for file upload')
-    }
-    const res = await fetch('/api/images/sign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campgroundId, originalName }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json() as Promise<{ signedUrl: string; path: string; fullUrl: string }>
-  }
-
-  // PUT with progress (XHR so we get progress events reliably)
-  const uploadToSignedUrl = (signedUrl: string, file: File, onProgress: (pct: number) => void) =>
-    new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('PUT', signedUrl)
-      xhr.setRequestHeader('Content-Type', file.type)
-      xhr.upload.onprogress = (evt) => {
-        if (evt.lengthComputable) onProgress(Math.round((evt.loaded / evt.total) * 100))
-      }
-      xhr.onload = () =>
-        xhr.status >= 200 && xhr.status < 300
-          ? resolve()
-          : reject(new Error(`Upload failed (${xhr.status})`))
-      xhr.onerror = () => reject(new Error('Network error during upload'))
-      xhr.send(file)
-    })
-
-  const recordImage = async (path: string, alt?: string) => {
-    if (!autoRecord || !campgroundId) return
-    await fetch('/api/images/record', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campgroundId, path, alt }),
-    })
-  }
-
-  const uploadSingleItem = useCallback(
-    async (itemIndex: number) => {
-      if (!campgroundId) {
-        console.error('Cannot upload: campgroundId is required')
-        return
-      }
-
-      // Get current item
-      const currentItems = items
-      const currentItem = currentItems[itemIndex]
-      if (!currentItem || currentItem.status !== 'queued' || currentItem.error) return
-
-      // Mark as uploading
-      setItems((prev) => {
-        const next = [...prev]
-        if (next[itemIndex]) {
-          next[itemIndex].status = 'uploading'
-        }
-        emitFiles(next)
-        return next
-      })
-
-      try {
-        const fileKey = `${currentItem.file.name}|${currentItem.file.size}|${currentItem.file.lastModified}`
-        if (startedUploadsRef.current.has(fileKey)) return
-        startedUploadsRef.current.add(fileKey)
-
-        const { signedUrl, path, fullUrl } = await signUrl(currentItem.file.name)
-
-        await uploadToSignedUrl(signedUrl, currentItem.file, (pct) => {
-          setItems((prev) => {
-            const next = [...prev]
-            if (next[itemIndex]) {
-              next[itemIndex].progress = pct
-            }
-            emitFiles(next)
-            return next
-          })
-        })
-
-        // Immediately remove completed item from local state to avoid UI confusion
-        setItems((prev) => {
-          const next = prev.filter((_, idx) => idx !== itemIndex)
-          emitFiles(next)
-          return next
-        })
-
-        await recordImage(path, currentItem.file.name)
-
-        // Update parent component with new image (strong dedupe by path)
-        if (onChange) {
-          const newImage: UploadedImage = { url: fullUrl, path }
-          if (uploadedSetRef.current.has(path)) {
-            // already processed
-          } else {
-            uploadedSetRef.current.add(path)
-            onChange([...images, newImage])
-          }
-        }
-
-        // Call onComplete for this single item
-        const completedItem: UploadItem = {
-          ...currentItem,
-          status: 'done',
-          path,
-          url: fullUrl,
-          progress: 100,
-        }
-        onComplete?.([completedItem])
-
-        // Item already removed above
-      } catch (e: any) {
-        setItems((prev) => {
-          const next = [...prev]
-          if (next[itemIndex]) {
-            next[itemIndex].status = 'error'
-            next[itemIndex].error = e?.message || 'Upload failed'
-          }
-          emitFiles(next)
-          return next
-        })
-      }
-    },
-    [campgroundId, images, onChange, onComplete]
-  )
-
-  const removeItem = (i: number) => {
-    setItems((prev) => {
-      const next = [...prev]
-      const [removed] = next.splice(i, 1)
-      if (removed?.preview) URL.revokeObjectURL(removed.preview)
-      emitFiles(next) // <-- and emit here
-      return next
-    })
-  }
 
   const removeExistingImage = (path: string) => {
     if (onChange) {

@@ -179,10 +179,6 @@ export default function UpdateCampgroundForm({ campground }: { campground: Campg
             campgroundId={campground.id.toString()}
             images={images}
             onChange={handleImagesChange}
-            onComplete={(completedItems) => {
-              console.log('Upload completed:', completedItems)
-            }}
-            autoRecord={false} // Don't record in DB, we handle it in the form submission
             maxImages={10}
           />
           {/* Keep server action happy with hidden input */}

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { findProfile } from '@/lib/db'
 import EditProfileForm from '@/components/profile/EditProfileForm'
-import { patterns, colors, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { patterns, darkMode } from '@/lib/design-tokens'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

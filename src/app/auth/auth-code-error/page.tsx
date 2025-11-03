@@ -30,7 +30,7 @@ export default function AuthCodeError() {
                   Authentication Failed
                 </h3>
                 <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-                  <p>We couldn't complete your authentication. This might be due to:</p>
+                  <p>We couldn&apos;t complete your authentication. This might be due to:</p>
                   <ul className="mt-2 list-disc list-inside space-y-1">
                     <li>You denied permission to the application</li>
                     <li>The authentication request expired</li>

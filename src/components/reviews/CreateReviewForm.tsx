@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createReviewAction } from '@/app/campgrounds/actions'
-import { patterns, effects, interactive, darkMode } from '@/lib/design-tokens'
+import { patterns, effects, darkMode } from '@/lib/design-tokens'
 import { LoadingSpinner, LoadingOverlay } from '@/components/ui/loading-spinner'
 
 interface CreateReviewFormProps {
@@ -46,7 +46,7 @@ export default function CreateReviewForm({
       } else {
         setError(result.error || 'Failed to create review')
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsSubmitting(false)

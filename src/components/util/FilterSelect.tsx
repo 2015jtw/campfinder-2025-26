@@ -54,8 +54,6 @@ export default function FilterSelect({ current }: { current: SortOption }) {
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const currentOption = OPTIONS.find((o) => o.value === current)
-
   return (
     <div className="relative">
       <label className="inline-flex items-center gap-2.5 group">

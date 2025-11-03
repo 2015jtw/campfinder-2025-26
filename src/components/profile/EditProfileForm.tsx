@@ -8,6 +8,28 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { saveProfile, saveAvatarUrl } from '@/app/profile/actions'
 
+type ErrorWithMessage = {
+  message: string
+}
+
+const isErrorWithMessage = (error: unknown): error is ErrorWithMessage =>
+  typeof error === 'object' &&
+  error !== null &&
+  'message' in error &&
+  typeof (error as { message: unknown }).message === 'string'
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && typeof error.message === 'string') {
+    return error.message
+  }
+
+  if (isErrorWithMessage(error)) {
+    return error.message
+  }
+
+  return fallback
+}
+
 export default function EditProfileForm({
   userId,
   initialDisplayName,
@@ -43,6 +65,12 @@ export default function EditProfileForm({
         return
       }
 
+      if (user.id !== userId) {
+        setMsg('Signed in user does not match this profile')
+        setUploading(false)
+        return
+      }
+
       // Generate unique filename
       let ext = file.name.split('.').pop()?.toLowerCase()
       // If ext is missing, not a valid extension, or equals the whole filename, fallback to MIME type
@@ -58,7 +86,7 @@ export default function EditProfileForm({
         }
         ext = mimeToExt[file.type] || 'jpg'
       }
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`
 
       // Upload to Supabase Storage
       const { error: upErr } = await supabase.storage
@@ -82,31 +110,13 @@ export default function EditProfileForm({
           setAvatarUrl(publicUrl)
           setMsg('Avatar updated successfully')
         } catch (err: unknown) {
-          if (
-            err &&
-            typeof err === 'object' &&
-            'message' in err &&
-            typeof (err as any).message === 'string'
-          ) {
-            setMsg((err as { message: string }).message)
-          } else {
-            setMsg('Failed to save avatar')
-          }
+          setMsg(getErrorMessage(err, 'Failed to save avatar'))
         } finally {
           setUploading(false)
         }
       })
     } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'message' in err &&
-        typeof (err as any).message === 'string'
-      ) {
-        setMsg((err as { message: string }).message)
-      } else {
-        setMsg('Upload failed')
-      }
+      setMsg(getErrorMessage(err, 'Upload failed'))
       setUploading(false)
     }
   }
@@ -121,16 +131,7 @@ export default function EditProfileForm({
         })
         setMsg('Profile updated successfully')
       } catch (err: unknown) {
-        if (
-          err &&
-          typeof err === 'object' &&
-          'message' in err &&
-          typeof (err as any).message === 'string'
-        ) {
-          setMsg((err as { message: string }).message)
-        } else {
-          setMsg('Something went wrong.')
-        }
+        setMsg(getErrorMessage(err, 'Something went wrong.'))
       }
     })
   }

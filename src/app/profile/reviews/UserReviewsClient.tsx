@@ -50,7 +50,7 @@ export default function UserReviewsClient({
       } else {
         toast.error(result.error || 'Failed to delete review')
       }
-    } catch (error) {
+    } catch {
       toast.error('An unexpected error occurred')
     }
   }
@@ -143,7 +143,7 @@ export default function UserReviewsClient({
                 <h3 className="text-lg font-medium mb-2 text-slate-900 dark:text-slate-100">
                   No reviews found
                 </h3>
-                <p className="text-sm mb-4 text-slate-600 dark:text-slate-400">
+                <p className="text-sm mb-4 text-slate-600 dark:text-slate-400 ">
                   Try adjusting your search terms to find reviews.
                 </p>
               </div>
@@ -163,7 +163,10 @@ export default function UserReviewsClient({
                       acc[campgroundId].reviews.push(review)
                       return acc
                     },
-                    {} as Record<number, { campground: any; reviews: any[] }>
+                    {} as Record<
+                      number,
+                      { campground: { id: number; title: string; slug: string }; reviews: Review[] }
+                    >
                   )
 
                   return Object.values(groupedReviews).map((group) => (

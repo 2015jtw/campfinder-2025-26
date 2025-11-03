@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Format results for frontend
-    const formattedResults = results.map((campground: any) => ({
+    const formattedResults = results.map((campground) => ({
       id: campground.id,
       slug: campground.slug,
       title: campground.title,
@@ -61,9 +61,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedResults)
   } catch (error) {
     console.error('Search error:', error)
-    return NextResponse.json(
-      { error: 'Search failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
   }
 }
