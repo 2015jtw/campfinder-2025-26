@@ -7,7 +7,7 @@ export default function HeroSection() {
   return (
     <section className="relative overflow-hidden h-screen">
       {/* Background image with overlay */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         <Image
           src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=2070&auto=format&fit=crop"
           alt="Beautiful camping landscape"
@@ -25,7 +25,7 @@ export default function HeroSection() {
       </div>
 
       {/* Animated particles effect */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/40 rounded-full animate-pulse" />
         <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-white/30 rounded-full animate-pulse delay-75" />
         <div className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 bg-white/50 rounded-full animate-pulse delay-150" />
@@ -66,7 +66,7 @@ export default function HeroSection() {
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
     </section>
   )
 }

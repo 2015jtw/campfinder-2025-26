@@ -12,14 +12,7 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error as Error
 
-      // Enhanced error logging for debugging
-      console.error(`Database error on attempt ${attempt + 1}:`, {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined,
-        attempt: attempt + 1,
-        maxRetries: maxRetries + 1,
-      })
+      console.error(`Database error on attempt ${attempt + 1}:`, error)
 
       // Check if it's a connection error
       if (
@@ -27,6 +20,8 @@ export async function withRetry<T>(
         (error.message.includes('prepared statement') ||
           error.message.includes('connection') ||
           error.message.includes('ConnectorError') ||
+          error.message.includes('Engine is not yet connected') ||
+          error.message.includes('not yet connected') ||
           error.message.includes('P1001') || // Connection error
           error.message.includes('P1008') || // Operation timeout
           error.message.includes('P1017') || // Server closed connection

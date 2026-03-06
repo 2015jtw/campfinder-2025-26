@@ -14,9 +14,10 @@ interface CampgroundResult {
 
 interface SearchBarProps {
   onResultClick?: () => void
+  className?: string
 }
 
-export function SearchBar({ onResultClick }: SearchBarProps = {}) {
+export function SearchBar({ onResultClick, className }: SearchBarProps = {}) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<CampgroundResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
@@ -112,9 +113,12 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
   }
 
   return (
-    <div ref={searchRef} className="relative w-full mx-auto xl:max-w-2xl 2xl:max-w-3xl">
+    <div
+      ref={searchRef}
+      className={`relative w-full mx-auto max-w-[29rem] 2xl:max-w-[34rem] ${className ?? ''}`}
+    >
       <form onSubmit={handleSearch} className="relative" suppressHydrationWarning>
-        <div className="flex items-center bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-2 lg:p-3">
+        <div className="flex items-center bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-1.5">
           <MapPin className="h-4 w-4 lg:h-5 lg:w-5 text-gray-400 dark:text-slate-400 ml-2 lg:ml-3 mr-2 lg:mr-3 flex-shrink-0" />
           <input
             ref={inputRef}
@@ -123,7 +127,7 @@ export function SearchBar({ onResultClick }: SearchBarProps = {}) {
             value={query}
             onChange={handleInputChange}
             onFocus={() => query && setIsOpen(true)}
-            className="flex-1 outline-none text-gray-700 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400 text-sm lg:text-base min-w-0 w-full py-2 lg:py-1 bg-transparent"
+            className="flex-1 outline-none text-gray-700 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400 text-sm min-w-0 w-full py-1 bg-transparent"
           />
           {query && (
             <button

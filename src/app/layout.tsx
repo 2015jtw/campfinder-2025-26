@@ -19,9 +19,61 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://campfinder.app'
+
 export const metadata: Metadata = {
-  title: 'Campfinder 2025',
-  description: 'Find the best campsites for your next adventure',
+  metadataBase: new URL(siteUrl),
+  title: {
+    template: '%s | CampFinder',
+    default: 'CampFinder – Discover Your Perfect Campsite',
+  },
+  description:
+    'Find and book the best campgrounds across the US. Browse reviews, photos, prices, and locations for thousands of campsites.',
+  keywords: [
+    'campgrounds',
+    'camping',
+    'campsites',
+    'outdoor adventures',
+    'camping spots',
+    'tent camping',
+    'RV parks',
+    'nature',
+  ],
+  authors: [{ name: 'CampFinder' }],
+  creator: 'CampFinder',
+  openGraph: {
+    type: 'website',
+    siteName: 'CampFinder',
+    title: 'CampFinder – Discover Your Perfect Campsite',
+    description:
+      'Find and book the best campgrounds across the US. Browse reviews, photos, prices, and locations for thousands of campsites.',
+    url: siteUrl,
+    images: [
+      {
+        url: '/campfinder-logo.svg',
+        width: 1200,
+        height: 630,
+        alt: 'CampFinder – Discover Your Perfect Campsite',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CampFinder – Discover Your Perfect Campsite',
+    description:
+      'Find and book the best campgrounds across the US. Browse reviews, photos, prices, and locations for thousands of campsites.',
+    images: ['/campfinder-logo.svg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 export const dynamic = 'force-dynamic'

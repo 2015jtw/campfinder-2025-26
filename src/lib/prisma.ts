@@ -9,3 +9,6 @@ export const prisma =
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// Eagerly connect so the engine is ready before the first query fires
+void prisma.$connect()
