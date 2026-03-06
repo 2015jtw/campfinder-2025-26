@@ -1,7 +1,20 @@
 export const runtime = 'nodejs'
 export const revalidate = 60 // ISR is fine for public list
 
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+
+export const metadata: Metadata = {
+  title: 'Find Your Perfect Campsite',
+  description:
+    'Discover thousands of campgrounds across the US. Browse reviews, photos, prices, and locations to plan your perfect outdoor adventure.',
+  openGraph: {
+    url: '/',
+    title: 'CampFinder – Find Your Perfect Campsite',
+    description:
+      'Discover thousands of campgrounds across the US. Browse reviews, photos, prices, and locations to plan your perfect outdoor adventure.',
+  },
+}
 import { withRetry } from '@/lib/db'
 import HeroSection from '@/components/HeroSection'
 import AboutSection from '@/components/AboutSection'

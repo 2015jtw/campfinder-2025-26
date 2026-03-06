@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { MobileMenu } from './MobileMenu'
 import { ProfileDropdown } from './ProfileDropdown'
 import { SearchBar } from './util/SearchBar'
-import { patterns, effects, interactive } from '@/lib/design-tokens'
+import { interactive } from '@/lib/design-tokens'
 
 export default async function Header() {
   const supabase = await createClient()
@@ -22,19 +22,16 @@ export default async function Header() {
     <header
       className={`sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70`}
     >
-      <div className="mx-auto flex items-center justify-between w-full max-w-none px-6 sm:px-8 lg:px-12 xl:px-16 py-4 gap-8">
+      <div className="mx-auto grid grid-cols-[auto_minmax(0,1fr)_auto] items-center w-full max-w-none px-6 sm:px-8 2xl:px-12 py-4 gap-4">
         {/* Left Side: Logo and Navigation */}
-        <div className="flex items-center gap-10 lg:gap-12">
-          <Link
-            href="/"
-            className={`text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100 hover:text-slate-700 dark:hover:text-slate-300 whitespace-nowrap ${effects.transition.colors}`}
-          >
-            Logo
+        <div className="flex items-center gap-6 2xl:gap-10">
+          <Link href="/" className="flex-shrink-0">
+            <img src="/campfinder-logo.svg" alt="CampFinder" className="h-10 lg:h-12 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden min-[1200px]:flex" viewport={false}>
-            <NavigationMenuList className="gap-10 lg:gap-12">
+          <NavigationMenu className="hidden min-[1100px]:flex" viewport={false}>
+            <NavigationMenuList className="gap-4 2xl:gap-8">
               <NavigationMenuItem>
                 <NavigationMenuLink
                   href="/campgrounds"
@@ -51,35 +48,31 @@ export default async function Header() {
                   Create
                 </NavigationMenuLink>
               </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/about-us"
-                  className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
-                >
-                  About
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  href="/contact-us"
-                  className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
-                >
-                  Contact
-                </NavigationMenuLink>
-              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
 
         {/* Center: Search Bar */}
-        <div className="hidden min-[1300px]:flex flex-1 justify-center mx-8">
+        <div className="hidden min-[1100px]:flex justify-center px-4">
           <SearchBar />
         </div>
 
         {/* Right Side: Auth and Mobile Menu */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 justify-end">
           {/* Desktop Auth */}
-          <div className="hidden min-[1200px]:flex items-center gap-10 lg:gap-12">
+          <div className="hidden min-[1100px]:flex items-center gap-4 2xl:gap-8">
+            <Link
+              href="/about-us"
+              className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+            >
+              About
+            </Link>
+            <Link
+              href="/contact-us"
+              className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+            >
+              Contact
+            </Link>
             {user ? (
               <ProfileDropdown />
             ) : (
@@ -96,7 +89,7 @@ export default async function Header() {
           </div>
 
           {/* Mobile Menu */}
-          <div className="min-[1200px]:hidden">
+          <div className="min-[1100px]:hidden">
             <MobileMenu user={user} />
           </div>
         </div>

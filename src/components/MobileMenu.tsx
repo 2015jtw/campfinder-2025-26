@@ -64,12 +64,12 @@ export function MobileMenu({ user }: MobileMenuProps) {
       <Button
         variant="ghost"
         size="default"
-        className="min-[1200px]:hidden cursor-pointer"
+        className="min-[1100px]:hidden cursor-pointer"
         onClick={toggleMobileMenu}
         aria-label="Toggle mobile menu"
       >
         <svg
-          className="h-6 w-6"
+          className="h-12 w-12"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -97,21 +97,21 @@ export function MobileMenu({ user }: MobileMenuProps) {
       {isMobileMenuOpen && (
         <>
           <div
-            className="fixed inset-0 top-full bg-black/40 backdrop-blur-sm z-[9998] min-[1200px]:hidden"
+            className="fixed inset-0 top-full bg-black/40 backdrop-blur-sm z-[9998] min-[1100px]:hidden"
             onClick={closeMobileMenu}
             aria-hidden="true"
           />
 
           {/* Mobile Menu Dropdown */}
           <div
-            className="fixed top-full left-0 right-0 min-[1200px]:hidden border-t-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 shadow-2xl z-[9999] max-h-[calc(100vh-4rem)] overflow-y-auto"
+            className="fixed top-full left-0 right-0 min-[1100px]:hidden border-t-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 shadow-2xl z-[9999] max-h-[calc(100vh-4rem)] overflow-y-auto"
             onMouseEnter={handleMouseEnterMenu}
             onMouseLeave={handleMouseLeaveMenu}
           >
             <div className="px-6 py-6 space-y-6">
               {/* Mobile Search Bar */}
               <div className="w-full">
-                <SearchBar onResultClick={closeMobileMenu} />
+                <SearchBar onResultClick={closeMobileMenu} className="max-w-none" />
               </div>
 
               {/* Mobile Navigation Links */}
