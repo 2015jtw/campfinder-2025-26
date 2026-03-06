@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Toaster } from '@/components/ui/sonner'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import Footer from '@/components/Footer'
+import { Analytics } from '@vercel/analytics/react'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -102,6 +103,7 @@ export default async function RootLayout({
           <AuthProvider initialUser={user}>
             <Header />
             {children}
+            <Analytics />
             <Toaster />
             <Footer />
           </AuthProvider>
