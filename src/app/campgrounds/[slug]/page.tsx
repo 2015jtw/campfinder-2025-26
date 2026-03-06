@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
@@ -8,6 +9,47 @@ import CampgroundDetailMap from '@/components/maps/CampgroundDetailMap'
 
 interface CampgroundDetailPageProps {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: CampgroundDetailPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const campground = await prisma.campground.findUnique({
+    where: { slug },
+    select: {
+      title: true,
+      description: true,
+      location: true,
+      images: { select: { url: true }, take: 1, orderBy: { sortOrder: 'asc' } },
+    },
+  })
+
+  if (!campground) {
+    return { title: 'Campground Not Found', robots: { index: false } }
+  }
+
+  const title = campground.title
+  const description = campground.description
+    ? campground.description.slice(0, 155)
+    : `Explore ${campground.title} in ${campground.location}. View photos, reviews, and pricing on CampFinder.`
+  const imageUrl = campground.images[0]?.url
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/campgrounds/${slug}`,
+      type: 'article',
+      ...(imageUrl ? { images: [{ url: imageUrl, alt: title }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(imageUrl ? { images: [imageUrl] } : {}),
+    },
+  }
 }
 
 async function getCampground(slug: string) {

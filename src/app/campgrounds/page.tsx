@@ -2,7 +2,20 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+
+export const metadata: Metadata = {
+  title: 'Browse Campgrounds',
+  description:
+    'Explore all campgrounds on CampFinder. Filter by location, price, and rating to find the perfect campsite for your next outdoor trip.',
+  openGraph: {
+    url: '/campgrounds',
+    title: 'Browse Campgrounds | CampFinder',
+    description:
+      'Explore all campgrounds on CampFinder. Filter by location, price, and rating to find the perfect campsite for your next outdoor trip.',
+  },
+}
 import { withRetry } from '@/lib/db'
 import ViewToggle from '@/components/util/ViewToggle'
 import FilterSelect, { SortOption } from '@/components/util/FilterSelect'

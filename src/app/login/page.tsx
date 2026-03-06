@@ -1,5 +1,11 @@
+import type { Metadata } from 'next'
 import EmailPasswordForm from '@/components/auth/EmailPasswordForm'
 import GoogleOAuthForm from '@/components/auth/GoogleOAuthForm'
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  robots: { index: false, follow: false },
+}
 
 export default function LoginPage() {
   return (
