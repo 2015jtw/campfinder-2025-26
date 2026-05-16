@@ -42,6 +42,14 @@ export default async function Header() {
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
+                  href="/blog"
+                  className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
+                >
+                  Blog
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
                   href="/campgrounds/new"
                   className={`text-base lg:text-lg font-medium text-slate-700 dark:text-slate-200 rounded-md px-2 py-1 ${interactive.hover.link} ${interactive.focus.ring} whitespace-nowrap`}
                 >

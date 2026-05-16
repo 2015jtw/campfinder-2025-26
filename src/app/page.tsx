@@ -19,6 +19,8 @@ import { withRetry } from '@/lib/db'
 import HeroSection from '@/components/HeroSection'
 import AboutSection from '@/components/AboutSection'
 import FeaturedCarousel from '@/components/campground/FeaturedCarousel'
+import NewsletterSection from '@/components/newsletter/NewsletterSection'
+import LatestBlogPosts from '@/components/blog/LatestBlogPosts'
 import type { Prisma } from '@prisma/client'
 
 type FeaturedCampground = {
@@ -159,6 +161,16 @@ export default async function HomePage() {
           )}
         </section>
       </main>
+      <main className="container mx-auto px-4 py-12">
+        <section aria-labelledby="latest-blog">
+          <h2 id="latest-blog" className="text-2xl font-bold text-center mb-6">
+            Latest from the Blog
+          </h2>
+          <LatestBlogPosts />
+        </section>
+      </main>
+
+      <NewsletterSection />
     </>
   )
 }

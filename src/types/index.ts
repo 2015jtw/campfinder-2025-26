@@ -26,3 +26,31 @@ export type FeaturedCarouselItem = {
   _count?: { reviews: number }
   _avgRating?: number | null
 }
+
+export type BlogPostCard = {
+  id: number
+  slug: string
+  title: string
+  excerpt: string | null
+  featuredImage: string | null
+  publishedAt: Date | null
+  readingTime: number | null
+  author: { displayName: string | null; avatarUrl: string | null }
+  categories: { category: { name: string; slug: string } }[]
+}
+
+export type BlogPostFull = Omit<BlogPostCard, 'categories'> & {
+  content: string
+  status: 'draft' | 'published' | 'archived'
+  authorId: string
+  createdAt: Date
+  updatedAt: Date
+  categories: { category: { id: number; name: string; slug: string } }[]
+}
+
+export type BlogCategory = {
+  id: number
+  name: string
+  slug: string
+  description: string | null
+}

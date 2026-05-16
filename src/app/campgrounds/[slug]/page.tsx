@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import CampgroundDetailCard from '@/components/campground/CampgroundDetailCard'
-import MapSection from '@/components/maps/CampgroundDetailMap'
 import ReviewsSection from '@/components/reviews/ReviewsSection'
 import CampgroundDetailMap from '@/components/maps/CampgroundDetailMap'
+import WeatherWidget from '@/components/campground/WeatherWidget'
+import CampgroundChatbot from '@/components/campground/CampgroundChatbot'
 
 interface CampgroundDetailPageProps {
   params: Promise<{ slug: string }>
@@ -138,7 +139,12 @@ export default async function CampgroundDetailPage({ params }: CampgroundDetailP
 
           {/* Right Column - Map and Reviews */}
           <div className="space-y-8">
-            {/* Map Section */}
+            <WeatherWidget
+              latitude={campground.latitude}
+              longitude={campground.longitude}
+              location={campground.location}
+            />
+
             <CampgroundDetailMap
               latitude={campground.latitude}
               longitude={campground.longitude}
@@ -154,6 +160,8 @@ export default async function CampgroundDetailPage({ params }: CampgroundDetailP
           </div>
         </div>
       </div>
+
+      <CampgroundChatbot campgroundId={campground.id} campgroundTitle={campground.title} />
     </div>
   )
 }

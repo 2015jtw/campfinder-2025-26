@@ -49,6 +49,9 @@ export async function updateSession(request: NextRequest) {
     '/terms',
     '/contact-us',
     '/api/contact', // Public API endpoint for contact form
+    '/api/chat', // Public API endpoint for campground chatbot
+    '/api/newsletter', // Public API endpoint for newsletter signup
+    '/newsletter', // Confirmation success page
   ]
 
   // Check if the current path is public

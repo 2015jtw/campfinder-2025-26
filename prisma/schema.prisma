@@ -361,6 +361,7 @@ model Profile {
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
   campgrounds Campground[]
+  blogPosts   BlogPost[]
   user        AuthUser     @relation(fields: [id], references: [id], onDelete: Cascade, map: "profiles_id_fkey")
   reviews     Review[]
 
@@ -416,6 +417,18 @@ model Review {
   @@index([campgroundId])
   @@index([userId])
   @@map("reviews")
+  @@schema("public")
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String?
+  confirmed Boolean  @default(false)
+  token     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@schema("public")
 }
 
@@ -527,4 +540,58 @@ enum oauth_response_type {
   code
 
   @@schema("auth")
+}
+
+model BlogPost {
+  id            Int               @id @default(autoincrement())
+  title         String
+  slug          String            @unique
+  excerpt       String?
+  content       String
+  featuredImage String?           @map("featured_image")
+  status        BlogPostStatus    @default(draft)
+  publishedAt   DateTime?         @map("published_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updated_at")
+  readingTime   Int?              @map("reading_time")
+  authorId      String            @map("author_id") @db.Uuid
+  author        Profile           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories    BlogPostCategory[]
+
+  @@index([authorId])
+  @@index([slug])
+  @@index([status, publishedAt(sort: Desc)])
+  @@map("blog_posts")
+  @@schema("public")
+}
+
+model BlogCategory {
+  id          Int               @id @default(autoincrement())
+  name        String
+  slug        String            @unique
+  description String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  posts       BlogPostCategory[]
+
+  @@map("blog_categories")
+  @@schema("public")
+}
+
+model BlogPostCategory {
+  postId     Int          @map("post_id")
+  categoryId Int          @map("category_id")
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@map("blog_post_categories")
+  @@schema("public")
+}
+
+enum BlogPostStatus {
+  draft
+  published
+  archived
+
+  @@schema("public")
 }
