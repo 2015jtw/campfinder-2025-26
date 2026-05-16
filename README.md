@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CampFinder
+
+A full-stack campground discovery platform built with Next.js 15. Users can browse, create, and review campgrounds, with interactive maps, AI-powered chat assistance, a blog, and a newsletter system.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router, Turbopack)
+- **Language**: TypeScript
+- **Database**: PostgreSQL via Supabase + Prisma ORM
+- **Auth**: Supabase Auth (email + Google OAuth)
+- **Storage**: Supabase Storage (campground images)
+- **Maps**: Mapbox GL / react-map-gl
+- **AI**: Vercel AI SDK + Anthropic Claude (campground chatbot)
+- **Email**: Nodemailer (contact form + newsletter)
+- **UI**: Tailwind CSS v4, shadcn/ui, Radix UI
+- **Analytics**: Vercel Analytics
+
+## Features
+
+- Browse campgrounds with carousels (most reviewed, newest, budget-friendly)
+- Full campground detail pages with image galleries, reviews, and ratings
+- Interactive Mapbox map on detail pages
+- AI chatbot assistant on each campground page
+- Weather widget per campground location
+- User auth with profile management
+- Create / update / delete campgrounds (authenticated)
+- Image upload with drag-and-drop ordering
+- Review system with star ratings
+- Blog with categories and reading time
+- Newsletter subscription with confirmation
+- Contact form
+- SEO: sitemap.xml, robots.txt, Open Graph metadata
+- ISR (Incremental Static Regeneration) on public pages
 
 ## Getting Started
 
-First, run the development server:
+**Requirements**: Node.js 20+, pnpm 9
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy `.env` and fill in the values (see [Environment Variables](#environment-variables)):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run the dev server:
 
-## Learn More
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Generate Prisma client and seed the database:
 
-## Deploy on Vercel
+```bash
+pnpm prisma generate
+pnpm prisma db seed
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Supabase Postgres connection string (pooled) |
+| `DIRECT_URL` | Supabase Postgres direct connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox public token |
+| `NEXT_PUBLIC_SITE_URL` | Full site URL (e.g. `https://campfinder.vercel.app`) |
+| `ANTHROPIC_API_KEY` | Anthropic API key for the campground chatbot |
+| `SMTP_HOST` | SMTP server host |
+| `SMTP_PORT` | SMTP server port |
+| `SMTP_SECURE` | `true` for TLS |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASSWORD` | SMTP password |
+| `SMTP_FROM_EMAIL` | Sender email address |
+| `SMTP_FROM_NAME` | Sender display name |
+| `SMTP_TO_EMAIL` | Recipient for contact form submissions |
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `pnpm dev` | Start dev server with Turbopack |
+| `pnpm build` | Production build |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm analyze` | Bundle analyzer |
+| `pnpm prisma db seed` | Seed the database |
+
+## Project Structure
+
+```
+src/
+  app/          # Next.js App Router pages and API routes
+  components/   # React components (campground, blog, auth, maps, newsletter, ui)
+  lib/          # Prisma client, Supabase client, utilities
+  types/        # Shared TypeScript types
+  hooks/        # Custom React hooks
+prisma/
+  schema.prisma # Database schema
+  seed.ts       # Seed script
+scripts/        # One-off utility scripts (geocoding, migrations)
+```
+
+## Deployment
+
+Deployed on Vercel. Set all environment variables in the Vercel project settings and connect the Supabase integration for `DATABASE_URL` and `DIRECT_URL`.
