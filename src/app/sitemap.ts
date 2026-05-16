@@ -5,10 +5,15 @@ export const revalidate = 3600 // regenerate every hour
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://campfinder.app'
 
-  const campgrounds = await prisma.campground.findMany({
-    select: { slug: true, createdAt: true },
-    orderBy: { createdAt: 'desc' },
-  })
+  let campgrounds: { slug: string; createdAt: Date }[] = []
+  try {
+    campgrounds = await prisma.campground.findMany({
+      select: { slug: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    })
+  } catch {
+    // DB unreachable at build time — sitemap returns static pages only
+  }
 
   const staticPages = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily' as const, priority: 1 },
