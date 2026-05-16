@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { CreateCampgroundSchema, type CreateCampgroundInput } from '@/lib/validations/campground'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import UploadImages, { type UploadedImage } from '@/components/campground/UploadImages'
 import MapPinSelector from '@/components/maps/MapPinSelector'
 import { createCampgroundAction } from '@/app/campgrounds/actions'

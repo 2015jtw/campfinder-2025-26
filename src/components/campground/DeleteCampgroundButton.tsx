@@ -40,7 +40,7 @@ export function DeleteCampgroundButton({ id }: { id: number }) {
           toast.success('Campground deleted successfully!')
           router.push('/')
         }
-      } catch (err) {
+      } catch {
         setError('An unexpected error occurred')
         toast.error('An unexpected error occurred')
       }
